@@ -41,7 +41,7 @@ export default function Dashboard() {
     // Check if user is authenticated
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (!token) {
-      router.push('/login');
+      router.push('/');
     } else {
       setIsLoading(false);
     }
@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isLoading) {

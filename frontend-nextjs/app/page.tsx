@@ -3,48 +3,177 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 
 export default function Home() {
   const router = useRouter();
+  const { login } = useAuthStore();
+  
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    password: '',
+    password_confirm: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/accounts/login/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const response = await api.post('/accounts/login/', {
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
-      }
-
-      if (data.access) {
-        localStorage.setItem('access_token', data.access);
-        if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
+      const { access, refresh } = response.data;
+      
+      if (access) {
+        localStorage.setItem('access_token', access);
+        if (refresh) {
+          localStorage.setItem('refresh_token', refresh);
+        }
+        
+        login(access, null);
+        
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => router.push('/dashboard'), 1500);
+      } else {
+        setError('Invalid response from server');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      let message = 'Login failed. Please try again.';
+      
+      if (err.response?.status === 401) {
+        message = 'Invalid email or password';
+      } else if (err.response?.data?.detail) {
+        message = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err.response?.data?.email) {
+        message = Array.isArray(err.response.data.email) ? err.response.data.email[0] : err.response.data.email;
+      } else if (err.response?.data?.password) {
+        message = Array.isArray(err.response.data.password) ? err.response.data.password[0] : err.response.data.password;
+      }
+      
+      setError(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    // Validation
+    if (!formData.email || !formData.first_name || !formData.last_name || !formData.password || !formData.password_confirm) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (formData.password !== formData.password_confirm) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api.post('/accounts/register/', formData);
+      
+      const { tokens, user } = response.data;
+      
+      if (tokens?.access) {
+        localStorage.setItem('access_token', tokens.access);
+        if (tokens.refresh) {
+          localStorage.setItem('refresh_token', tokens.refresh);
+        }
+        
+        login(tokens.access, user);
+        
+        setSuccess('Registration successful! Redirecting...');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
+      } else {
+        setError('Invalid response from server');
+      }
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      let message = 'Registration failed. Please try again.';
+      
+      if (err.response?.status === 400) {
+        const data = err.response.data;
+        if (data.email) {
+          message = Array.isArray(data.email) ? data.email[0] : data.email;
+        } else if (data.password) {
+          message = Array.isArray(data.password) ? data.password[0] : data.password;
+        } else if (data.password_confirm) {
+          message = Array.isArray(data.password_confirm) ? data.password_confirm[0] : data.password_confirm;
+        } else if (data.first_name) {
+          message = Array.isArray(data.first_name) ? data.first_name[0] : data.first_name;
+        } else if (data.last_name) {
+          message = Array.isArray(data.last_name) ? data.last_name[0] : data.last_name;
+        } else if (data.detail) {
+          message = data.detail;
+        } else if (data.message) {
+          message = data.message;
+        }
+      } else if (err.response?.data?.detail) {
+        message = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchForm = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setSuccess('');
+    setEmail('');
+    setPassword('');
+    setFormData({
+      email: '',
+      first_name: '',
+      last_name: '',
+      password: '',
+      password_confirm: '',
+    });
   };
 
   return (
@@ -140,9 +269,35 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Right Side - Login Card */}
+          {/* Right Side - Auth Card */}
           <div className="w-full max-w-md bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 shadow-2xl">
-            <h3 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h3>
+            {/* Toggle Buttons */}
+            <div className="flex mb-6 bg-white/5 p-1 rounded-lg">
+              <button
+                onClick={() => setIsLogin(true)}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                  isLogin 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setIsLogin(false)}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                  !isLogin 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            <h3 className="text-2xl font-bold text-white mb-6 text-center">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h3>
 
             {error && (
               <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-2">
@@ -152,81 +307,210 @@ export default function Home() {
             )}
 
             {success && (
-              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex gap-2">
+                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
                 <p className="text-sm text-green-300">{success}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
-                    disabled={loading}
-                  />
+            {isLogin ? (
+              /* Login Form */
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                      disabled={loading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
 
-            {/* Demo Account */}
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs text-gray-400 text-center mb-3">Try with demo account:</p>
-              <div className="space-y-2 text-sm">
-                <p className="text-gray-300">
-                  <span className="text-gray-500">Email:</span> projectowner@example.com
-                </p>
-                <p className="text-gray-300">
-                  <span className="text-gray-500">Password:</span> TestPass123!
-                </p>
-              </div>
-            </div>
+                {/* Demo Account */}
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <p className="text-xs text-gray-400 text-center mb-3">Try with demo account:</p>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-300">
+                      <span className="text-gray-500">Email:</span> projectowner@example.com
+                    </p>
+                    <p className="text-gray-300">
+                      <span className="text-gray-500">Password:</span> TestPass123!
+                    </p>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              /* Registration Form */
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                {/* Name Fields */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      First Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleChange}
+                        placeholder="John"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                  </div>
 
-            {/* Sign Up Link */}
-            <p className="mt-6 text-center text-sm text-gray-400">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-purple-400 hover:text-purple-300 font-medium transition">
-                Sign up
-              </Link>
-            </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Last Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                      <input
+                        type="text"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleChange}
+                        placeholder="Doe"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="you@example.com"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                      disabled={loading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="password_confirm"
+                      value={formData.password_confirm}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"
+                      disabled={loading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Creating account...' : 'Create Account'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </main>

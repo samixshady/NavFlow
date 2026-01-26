@@ -26,7 +26,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (!token) {
-      router.push('/login');
+      router.push('/');
     } else {
       setIsLoading(false);
     }
@@ -34,7 +34,7 @@ export default function ProjectsPage() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isLoading) {

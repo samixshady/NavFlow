@@ -24,7 +24,7 @@ export default function OrganizationsPage() {
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (!token) {
-      router.push('/login');
+      router.push('/');
     } else {
       setIsLoading(false);
     }
@@ -32,7 +32,7 @@ export default function OrganizationsPage() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isLoading) {
