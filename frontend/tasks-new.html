@@ -22,16 +22,16 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item">
+                <a href="dashboard-new.html" class="nav-item">
                     <span class="icon">📊</span> Dashboard
                 </a>
-                <a href="organizations.html" class="nav-item">
+                <a href="organizations-new.html" class="nav-item">
                     <span class="icon">🏢</span> Organizations
                 </a>
-                <a href="projects.html" class="nav-item">
+                <a href="projects-new.html" class="nav-item">
                     <span class="icon">📋</span> Projects
                 </a>
-                <a href="tasks.html" class="nav-item active">
+                <a href="tasks-new.html" class="nav-item active">
                     <span class="icon">✓</span> Tasks
                 </a>
             </nav>
@@ -159,14 +159,10 @@
         let totalPages = 1;
 
         async function initPage() {
-            if (!isAuthenticated()) {
-                window.location.href = 'login.html';
-                return;
-            }
-
             CURRENT_USER = await getCurrentUser();
-            if (CURRENT_USER) {
-                document.getElementById('userEmail').textContent = CURRENT_USER.email;
+            if (!CURRENT_USER) {
+                window.location.href = 'login-new.html';
+                return;
             }
 
             await loadProjects();

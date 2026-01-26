@@ -22,16 +22,16 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item">
+                <a href="dashboard-new.html" class="nav-item">
                     <span class="icon">📊</span> Dashboard
                 </a>
-                <a href="organizations.html" class="nav-item active">
+                <a href="organizations-new.html" class="nav-item active">
                     <span class="icon">🏢</span> Organizations
                 </a>
-                <a href="projects.html" class="nav-item">
+                <a href="projects-new.html" class="nav-item">
                     <span class="icon">📋</span> Projects
                 </a>
-                <a href="tasks.html" class="nav-item">
+                <a href="tasks-new.html" class="nav-item">
                     <span class="icon">✓</span> Tasks
                 </a>
             </nav>
@@ -126,14 +126,10 @@
         let selectedOrgId = null;
 
         async function initPage() {
-            if (!isAuthenticated()) {
-                window.location.href = 'login.html';
-                return;
-            }
-
             CURRENT_USER = await getCurrentUser();
-            if (CURRENT_USER) {
-                document.getElementById('userEmail').textContent = CURRENT_USER.email;
+            if (!CURRENT_USER) {
+                window.location.href = 'login-new.html';
+                return;
             }
 
             await loadOrganizations();
@@ -149,7 +145,7 @@
             }
 
             try {
-                const data = await apiRequest('/organizations/', 'POST', {
+                const data = await apiRequest('/orgs/', 'POST', {
                     name,
                     description
                 });
@@ -165,7 +161,7 @@
         async function loadOrganizations() {
             try {
                 showLoading('orgsList');
-                const data = await apiRequest('/organizations/', 'GET');
+                const data = await apiRequest('/orgs/', 'GET');
                 const orgs = data.results || [];
 
                 if (orgs.length === 0) {
@@ -194,7 +190,7 @@
         async function openOrgModal(orgId) {
             selectedOrgId = orgId;
             try {
-                const org = await apiRequest(`/organizations/${orgId}/`, 'GET');
+                const org = await apiRequest(`/orgs/${orgId}/`, 'GET');
                 document.getElementById('modalOrgName').textContent = org.name;
                 document.getElementById('orgInfo').innerHTML = `<p>${org.description || 'No description'}</p>`;
 

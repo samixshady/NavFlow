@@ -19,6 +19,28 @@ const API_V1 = `${API_BASE_URL}/api/v1`;
 let CURRENT_USER = null;
 let ACTIVE_ORG_ID = null;
 
+// Get and set active organization
+function setActiveOrg(orgId) {
+    ACTIVE_ORG_ID = orgId;
+    if (orgId) {
+        localStorage.setItem('active_org_id', orgId);
+    }
+}
+
+function getActiveOrg() {
+    if (ACTIVE_ORG_ID) return ACTIVE_ORG_ID;
+    const stored = localStorage.getItem('active_org_id');
+    if (stored) {
+        ACTIVE_ORG_ID = stored;
+    }
+    return ACTIVE_ORG_ID;
+}
+
+function clearActiveOrg() {
+    ACTIVE_ORG_ID = null;
+    localStorage.removeItem('active_org_id');
+}
+
 // ============================================
 // TOKEN MANAGEMENT
 // ============================================
@@ -87,7 +109,21 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
             return null;
         }
 
-        const responseData = await response.json();
+        const contentType = response.headers.get('content-type');
+        let responseData;
+        
+        // Check if response is JSON or HTML
+        if (contentType && contentType.includes('application/json')) {
+            responseData = await response.json();
+        } else {
+            // If not JSON, it's likely an error page (HTML)
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+            }
+            responseData = { message: text };
+        }
+        
         console.log('Response:', responseData);
 
         if (!response.ok) {
@@ -211,6 +247,7 @@ async function loginUser() {
 async function logoutUser() {
     if (!confirm('Logout?')) return;
     clearTokens();
+    clearActiveOrg();
     localStorage.removeItem('user_email');
     window.location.href = 'index-new.html';
 }
@@ -327,6 +364,13 @@ function closeModal(modalId) {
 function initSidebar() {
     if (!isAuthenticated()) return;
 
+    // Display user email
+    const userEmail = localStorage.getItem('user_email');
+    const userEmailEl = document.getElementById('userEmail');
+    if (userEmailEl && userEmail) {
+        userEmailEl.textContent = userEmail;
+    }
+
     // Setup logout button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -337,7 +381,7 @@ function initSidebar() {
     }
 
     // Mark active nav item
-    const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+    const currentPage = window.location.pathname.split('/').pop() || 'dashboard-new.html';
     document.querySelectorAll('.nav-item, .sidebar-nav a').forEach(link => {
         const href = link.getAttribute('href');
         if (href && href.includes(currentPage)) {

@@ -22,16 +22,16 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item active">
+                <a href="dashboard-new.html" class="nav-item active">
                     <span class="icon">📊</span> Dashboard
                 </a>
-                <a href="organizations.html" class="nav-item">
+                <a href="organizations-new.html" class="nav-item">
                     <span class="icon">🏢</span> Organizations
                 </a>
-                <a href="projects.html" class="nav-item">
+                <a href="projects-new.html" class="nav-item">
                     <span class="icon">📋</span> Projects
                 </a>
-                <a href="tasks.html" class="nav-item">
+                <a href="tasks-new.html" class="nav-item">
                     <span class="icon">✓</span> Tasks
                 </a>
             </nav>
@@ -107,39 +107,23 @@
     <script src="app-clean.js"></script>
     <script>
         async function initPage() {
-            if (!isAuthenticated()) {
-                window.location.href = 'login.html';
+            CURRENT_USER = await getCurrentUser();
+            if (!CURRENT_USER) {
+                window.location.href = 'login-new.html';
                 return;
             }
 
-            // Get current user
-            try {
-                CURRENT_USER = await getCurrentUser();
-                if (!CURRENT_USER) {
-                    showError('Failed to load user data');
-                    return;
-                }
-
-                const welcome = document.getElementById('welcomeMessage');
-                if (welcome) {
-                    welcome.textContent = `Welcome, ${CURRENT_USER.first_name || CURRENT_USER.email}!`;
-                }
-
-                const userEmail = document.getElementById('userEmail');
-                if (userEmail) userEmail.textContent = CURRENT_USER.email;
-
-                // Load stats
-                await loadStats();
-
-            } catch (error) {
-                console.error('Init failed:', error);
-                showError('Failed to load dashboard');
+            const welcome = document.getElementById('welcomeMessage');
+            if (welcome) {
+                welcome.textContent = `Welcome, ${CURRENT_USER.first_name || CURRENT_USER.email}!`;
             }
+
+            await loadStats();
         }
 
         async function loadStats() {
             try {
-                const orgs = await apiRequest('/organizations/', 'GET');
+                const orgs = await apiRequest('/orgs/', 'GET');
                 const projects = await apiRequest('/projects/', 'GET');
                 const tasks = await apiRequest('/tasks/', 'GET');
 
