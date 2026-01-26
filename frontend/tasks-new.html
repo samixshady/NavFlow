@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - NavFlow</title>
+    <link rel="stylesheet" href="styles-clean.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">NavFlow</h1>
+            <div class="nav-right">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="organizations.html" class="nav-item">
+                    <span class="icon">🏢</span> Organizations
+                </a>
+                <a href="projects.html" class="nav-item">
+                    <span class="icon">📋</span> Projects
+                </a>
+                <a href="tasks.html" class="nav-item active">
+                    <span class="icon">✓</span> Tasks
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Messages -->
+            <div id="successMessage" class="alert alert-success" style="display: none;">
+                ✅ <span id="successText"></span>
+            </div>
+            <div id="errorMessage" class="alert alert-error" style="display: none;">
+                ❌ <span id="errorText"></span>
+            </div>
+
+            <!-- Filters -->
+            <div class="card filters-card">
+                <h3>Filters</h3>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="filterStatus">Status</label>
+                        <select id="filterStatus" onchange="loadTasks()">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="filterPriority">Priority</label>
+                        <select id="filterPriority" onchange="loadTasks()">
+                            <option value="">All Priority</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="filterProject">Project</label>
+                        <select id="filterProject" onchange="loadTasks()">
+                            <option value="">All Projects</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="searchTasks">Search</label>
+                        <input type="text" id="searchTasks" placeholder="Search tasks..." onkeyup="loadTasks()">
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                </div>
+            </div>
+
+            <!-- Create Task Form -->
+            <div class="card">
+                <h2>Create Task</h2>
+                <form id="createTaskForm" class="form" onsubmit="event.preventDefault(); createTask();">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskProject">Project *</label>
+                            <select id="taskProject" required>
+                                <option value="">Select Project</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskTitle">Task Title *</label>
+                            <input type="text" id="taskTitle" required placeholder="What needs to be done?">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskPriority">Priority</label>
+                            <select id="taskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskStatus">Status</label>
+                            <select id="taskStatus">
+                                <option value="pending" selected>Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDescription">Description (Optional)</label>
+                        <textarea id="taskDescription" rows="2" placeholder="Task details"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </form>
+            </div>
+
+            <!-- Tasks List -->
+            <div class="card">
+                <h2>All Tasks</h2>
+                <div id="tasksList" class="list">
+                    <p class="loading">Loading tasks...</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="pagination" style="display: none;"></div>
+        </main>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="taskModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTaskTitle">Task Details</h2>
+                <button type="button" class="modal-close">&times;</button>
+            </div>
+            <div id="taskContent"></div>
+        </div>
+    </div>
+
+    <script src="app-clean.js"></script>
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function initPage() {
+            if (!isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            CURRENT_USER = await getCurrentUser();
+            if (CURRENT_USER) {
+                document.getElementById('userEmail').textContent = CURRENT_USER.email;
+            }
+
+            await loadProjects();
+            await loadTasks();
+        }
+
+        async function loadProjects() {
+            try {
+                const data = await apiRequest('/projects/', 'GET');
+                const projects = data.results || [];
+
+                const selects = document.querySelectorAll('#taskProject, #filterProject');
+                selects.forEach(select => {
+                    const currentValue = select.value;
+                    const options = projects.map(p => 
+                        `<option value="${p.id}">${p.name}</option>`
+                    ).join('');
+
+                    select.innerHTML = '<option value="">Select Project</option>' + options;
+                    select.value = currentValue;
+                });
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+            }
+        }
+
+        async function createTask() {
+            const projectId = document.getElementById('taskProject')?.value;
+            const title = document.getElementById('taskTitle')?.value.trim();
+            const description = document.getElementById('taskDescription')?.value.trim() || '';
+            const priority = document.getElementById('taskPriority')?.value;
+            const status = document.getElementById('taskStatus')?.value;
+
+            if (!projectId || !title) {
+                showError('Project and title required');
+                return;
+            }
+
+            try {
+                await apiRequest('/tasks/', 'POST', {
+                    project: parseInt(projectId),
+                    title,
+                    description,
+                    priority,
+                    status
+                });
+
+                showSuccess('Task created!');
+                document.getElementById('createTaskForm').reset();
+                currentPage = 1;
+                await loadTasks();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                showLoading('tasksList');
+
+                const params = new URLSearchParams();
+                
+                const status = document.getElementById('filterStatus')?.value;
+                if (status) params.append('status', status);
+
+                const priority = document.getElementById('filterPriority')?.value;
+                if (priority) params.append('priority', priority);
+
+                const projectId = document.getElementById('filterProject')?.value;
+                if (projectId) params.append('project', projectId);
+
+                const search = document.getElementById('searchTasks')?.value.trim();
+                if (search) params.append('search', search);
+
+                params.append('page', currentPage);
+                params.append('page_size', 25);
+
+                const url = `/tasks/?${params.toString()}`;
+                const data = await apiRequest(url, 'GET');
+                const tasks = data.results || [];
+
+                if (tasks.length === 0) {
+                    document.getElementById('tasksList').innerHTML = '<p class="empty">No tasks found.</p>';
+                    document.getElementById('pagination').style.display = 'none';
+                    return;
+                }
+
+                const html = tasks.map(task => `
+                    <div class="task-item" onclick="openTaskModal(${task.id})">
+                        <div class="task-header">
+                            <h4>${task.title}</h4>
+                            <div class="task-badges">
+                                <span class="status-badge status-${task.status}">${task.status}</span>
+                                <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+                            </div>
+                        </div>
+                        <p class="task-project">${task.project_name || 'Unknown Project'}</p>
+                        <p>${task.description ? task.description.substring(0, 100) : 'No description'}</p>
+                        <small>${formatDate(task.created_at)}</small>
+                    </div>
+                `).join('');
+
+                document.getElementById('tasksList').innerHTML = html;
+
+                // Pagination
+                totalPages = Math.ceil((data.count || 0) / 25);
+                if (totalPages > 1) {
+                    let paginationHtml = '';
+                    for (let i = 1; i <= totalPages; i++) {
+                        const isActive = i === currentPage ? 'active' : '';
+                        paginationHtml += `<button class="page-btn ${isActive}" onclick="goToPage(${i})">${i}</button>`;
+                    }
+                    document.getElementById('pagination').innerHTML = paginationHtml;
+                    document.getElementById('pagination').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Failed to load tasks:', error);
+                showError('Failed to load tasks');
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadTasks();
+            window.scrollTo(0, 0);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPriority').value = '';
+            document.getElementById('filterProject').value = '';
+            document.getElementById('searchTasks').value = '';
+            currentPage = 1;
+            loadTasks();
+        }
+
+        async function openTaskModal(taskId) {
+            try {
+                const task = await apiRequest(`/tasks/${taskId}/`, 'GET');
+                document.getElementById('modalTaskTitle').textContent = task.title;
+
+                let html = `
+                    <div class="section">
+                        <p><strong>Project:</strong> ${task.project_name || 'Unknown'}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-${task.status}">${task.status}</span></p>
+                        <p><strong>Priority:</strong> <span class="priority-badge priority-${task.priority}">${task.priority}</span></p>
+                        <p><strong>Created:</strong> ${formatDateTime(task.created_at)}</p>
+                    </div>
+                `;
+
+                if (task.description) {
+                    html += `<div class="section"><h3>Description</h3><p>${task.description}</p></div>`;
+                }
+
+                html += `
+                    <div class="section">
+                        <h3>Update Task</h3>
+                        <form class="form" onsubmit="event.preventDefault(); updateTask(${taskId});">
+                            <div class="form-group">
+                                <label for="updateStatus">Status</label>
+                                <select id="updateStatus">
+                                    <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Status</button>
+                        </form>
+                    </div>
+                    
+                    <div class="section">
+                        <button class="btn btn-danger" onclick="deleteTask(${taskId})">Delete Task</button>
+                    </div>
+                `;
+
+                document.getElementById('taskContent').innerHTML = html;
+                openModal('taskModal');
+            } catch (error) {
+                showError('Failed to load task');
+            }
+        }
+
+        async function updateTask(taskId) {
+            const status = document.getElementById('updateStatus')?.value;
+            if (!status) return;
+
+            try {
+                await apiRequest(`/tasks/${taskId}/`, 'PUT', { status });
+                showSuccess('Task updated!');
+                await loadTasks();
+                closeModal('taskModal');
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+
+            try {
+                await apiRequest(`/tasks/${taskId}/`, 'DELETE');
+                showSuccess('Task deleted!');
+                await loadTasks();
+                closeModal('taskModal');
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -96,6 +96,60 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 // Registration
 // ============================================
 
+async function registerUser() {
+    hideAllMessages();
+
+    const email = document.getElementById('regEmail')?.value.trim();
+    const firstName = document.getElementById('firstName')?.value.trim();
+    const lastName = document.getElementById('lastName')?.value.trim();
+    const password = document.getElementById('regPassword')?.value;
+    const passwordConfirm = document.getElementById('confirmPassword')?.value;
+
+    if (!email || !firstName || !lastName || !password || !passwordConfirm) {
+        showError('All fields are required');
+        return;
+    }
+
+    if (password.length < 8) {
+        showFieldError('passwordError', 'Password must be at least 8 characters');
+        return;
+    }
+
+    if (password !== passwordConfirm) {
+        showFieldError('confirmPasswordError', 'Passwords do not match');
+        return;
+    }
+
+    const btn = document.getElementById('registerBtn');
+    if (btn) btn.disabled = true;
+
+    try {
+        const data = await apiRequest('/auth/register/', 'POST', {
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            password,
+            password_confirm: passwordConfirm
+        });
+
+        if (data.access) {
+            setAccessToken(data.access);
+            setRefreshToken(data.refresh);
+            localStorage.setItem('user_email', email);
+            showSuccess('Registration successful! Redirecting...');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+        }
+    } catch (error) {
+        showError(error.message || 'Registration failed');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// ============================================
+// Login
+// ============================================
+
 /**
  * Register a new user
  * Collects form data, validates it, and sends to backend
@@ -190,10 +244,6 @@ function registerUser() {
         document.getElementById('registerBtn').disabled = false;
     });
 }
-
-// ============================================
-// Login
-// ============================================
 
 /**
  * Login user with email and password

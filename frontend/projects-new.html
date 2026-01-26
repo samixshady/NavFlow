@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - NavFlow</title>
+    <link rel="stylesheet" href="styles-clean.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">NavFlow</h1>
+            <div class="nav-right">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="organizations.html" class="nav-item">
+                    <span class="icon">🏢</span> Organizations
+                </a>
+                <a href="projects.html" class="nav-item active">
+                    <span class="icon">📋</span> Projects
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span class="icon">✓</span> Tasks
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Messages -->
+            <div id="successMessage" class="alert alert-success" style="display: none;">
+                ✅ <span id="successText"></span>
+            </div>
+            <div id="errorMessage" class="alert alert-error" style="display: none;">
+                ❌ <span id="errorText"></span>
+            </div>
+
+            <!-- Create Project Form -->
+            <div class="card">
+                <h2>Create Project</h2>
+                <form id="createProjectForm" class="form" onsubmit="event.preventDefault(); createProject();">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectOrg">Organization *</label>
+                            <select id="projectOrg" required>
+                                <option value="">Select Organization</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectName">Project Name *</label>
+                            <input type="text" id="projectName" required placeholder="My Project">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectDescription">Description (Optional)</label>
+                        <textarea id="projectDescription" rows="2" placeholder="Project details"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </form>
+            </div>
+
+            <!-- Projects List -->
+            <div class="card">
+                <h2>My Projects</h2>
+                <div id="projectsList" class="grid-2">
+                    <p class="loading">Loading projects...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div id="projectModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalProjectName">Project Tasks</h2>
+                <button type="button" class="modal-close">&times;</button>
+            </div>
+
+            <div id="projectContent"></div>
+        </div>
+    </div>
+
+    <script src="app-clean.js"></script>
+    <script>
+        let selectedProjectId = null;
+
+        async function initPage() {
+            if (!isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            CURRENT_USER = await getCurrentUser();
+            if (CURRENT_USER) {
+                document.getElementById('userEmail').textContent = CURRENT_USER.email;
+            }
+
+            await loadOrganizations();
+            await loadProjects();
+        }
+
+        async function loadOrganizations() {
+            try {
+                const data = await apiRequest('/organizations/', 'GET');
+                const orgs = data.results || [];
+                const select = document.getElementById('projectOrg');
+
+                const options = orgs.map(org => 
+                    `<option value="${org.id}">${org.name}</option>`
+                ).join('');
+
+                select.innerHTML = '<option value="">Select Organization</option>' + options;
+            } catch (error) {
+                console.error('Failed to load orgs:', error);
+            }
+        }
+
+        async function createProject() {
+            const orgId = document.getElementById('projectOrg')?.value;
+            const name = document.getElementById('projectName')?.value.trim();
+            const description = document.getElementById('projectDescription')?.value.trim() || '';
+
+            if (!orgId || !name) {
+                showError('Organization and project name required');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/projects/', 'POST', {
+                    organization: parseInt(orgId),
+                    name,
+                    description
+                });
+
+                showSuccess('Project created!');
+                document.getElementById('createProjectForm').reset();
+                await loadProjects();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                showLoading('projectsList');
+                const data = await apiRequest('/projects/', 'GET');
+                const projects = data.results || [];
+
+                if (projects.length === 0) {
+                    document.getElementById('projectsList').innerHTML = '<p class="empty">No projects yet.</p>';
+                    return;
+                }
+
+                const html = projects.map(project => `
+                    <div class="project-card card" onclick="openProjectModal(${project.id})">
+                        <h3>${project.name}</h3>
+                        <p>${project.description || 'No description'}</p>
+                        <div class="project-meta">
+                            <span class="badge status-${project.status}">${project.status}</span>
+                            <span class="badge">${project.task_count || 0} tasks</span>
+                        </div>
+                        <button class="btn btn-small btn-primary">View →</button>
+                    </div>
+                `).join('');
+
+                document.getElementById('projectsList').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                showError('Failed to load projects');
+            }
+        }
+
+        async function openProjectModal(projectId) {
+            selectedProjectId = projectId;
+            try {
+                const project = await apiRequest(`/projects/${projectId}/`, 'GET');
+                document.getElementById('modalProjectName').textContent = `${project.name} - Tasks`;
+
+                // Load tasks for this project
+                const tasks = await apiRequest(`/projects/${projectId}/tasks/`, 'GET');
+                const taskList = tasks.results || [];
+
+                let html = '<div class="section"><h3>Tasks</h3>';
+                
+                if (taskList.length === 0) {
+                    html += '<p>No tasks in this project yet.</p>';
+                } else {
+                    html += '<div class="list">';
+                    html += taskList.map(task => `
+                        <div class="task-item">
+                            <strong>${task.title}</strong>
+                            <div class="task-meta">
+                                <span class="status-badge status-${task.status}">${task.status}</span>
+                                <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    html += '</div>';
+                }
+
+                html += '</div>';
+
+                // Add create task form if user has permission
+                html += `
+                    <div class="section">
+                        <h3>Create Task</h3>
+                        <form class="form" onsubmit="event.preventDefault(); createTaskInProject(${projectId});">
+                            <div class="form-group">
+                                <label for="taskTitle">Task Title *</label>
+                                <input type="text" id="taskTitle" required placeholder="Task description">
+                            </div>
+                            <div class="form-group">
+                                <label for="taskPriority">Priority</label>
+                                <select id="taskPriority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Task</button>
+                        </form>
+                    </div>
+                `;
+
+                document.getElementById('projectContent').innerHTML = html;
+                openModal('projectModal');
+            } catch (error) {
+                showError('Failed to load project');
+            }
+        }
+
+        async function createTaskInProject(projectId) {
+            const title = document.getElementById('taskTitle')?.value.trim();
+            const priority = document.getElementById('taskPriority')?.value;
+
+            if (!title) {
+                showError('Task title required');
+                return;
+            }
+
+            try {
+                await apiRequest('/tasks/', 'POST', {
+                    project: projectId,
+                    title,
+                    priority,
+                    status: 'pending'
+                });
+
+                showSuccess('Task created!');
+                await openProjectModal(selectedProjectId);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - NavFlow</title>
+    <link rel="stylesheet" href="styles-clean.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">NavFlow</h1>
+            <div class="nav-right">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="organizations.html" class="nav-item">
+                    <span class="icon">🏢</span> Organizations
+                </a>
+                <a href="projects.html" class="nav-item">
+                    <span class="icon">📋</span> Projects
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span class="icon">✓</span> Tasks
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Messages -->
+            <div id="successMessage" class="alert alert-success" style="display: none;">
+                ✅ <span id="successText"></span>
+            </div>
+            <div id="errorMessage" class="alert alert-error" style="display: none;">
+                ❌ <span id="errorText"></span>
+            </div>
+
+            <!-- Welcome Card -->
+            <div class="card welcome-card">
+                <h1>Welcome to NavFlow! 👋</h1>
+                <p id="welcomeMessage" class="subtitle">Loading...</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏢</div>
+                    <h3>Organizations</h3>
+                    <p class="stat-value" id="orgCount">0</p>
+                    <a href="organizations.html" class="stat-link">View →</a>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <h3>Projects</h3>
+                    <p class="stat-value" id="projectCount">0</p>
+                    <a href="projects.html" class="stat-link">View →</a>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✓</div>
+                    <h3>Tasks</h3>
+                    <p class="stat-value" id="taskCount">0</p>
+                    <a href="tasks.html" class="stat-link">View →</a>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <h3>Pending Tasks</h3>
+                    <p class="stat-value" id="pendingTaskCount">0</p>
+                    <a href="tasks.html" class="stat-link">View →</a>
+                </div>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="card">
+                <h2>Your Profile</h2>
+                <div id="userInfo" class="user-info">
+                    <p>Loading...</p>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card">
+                <h2>Quick Links</h2>
+                <div class="quick-links">
+                    <a href="organizations.html" class="quick-link-btn">📊 View All Organizations</a>
+                    <a href="projects.html" class="quick-link-btn">📋 View All Projects</a>
+                    <a href="tasks.html" class="quick-link-btn">✓ View All Tasks</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app-clean.js"></script>
+    <script>
+        async function initPage() {
+            if (!isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Get current user
+            try {
+                CURRENT_USER = await getCurrentUser();
+                if (!CURRENT_USER) {
+                    showError('Failed to load user data');
+                    return;
+                }
+
+                const welcome = document.getElementById('welcomeMessage');
+                if (welcome) {
+                    welcome.textContent = `Welcome, ${CURRENT_USER.first_name || CURRENT_USER.email}!`;
+                }
+
+                const userEmail = document.getElementById('userEmail');
+                if (userEmail) userEmail.textContent = CURRENT_USER.email;
+
+                // Load stats
+                await loadStats();
+
+            } catch (error) {
+                console.error('Init failed:', error);
+                showError('Failed to load dashboard');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const orgs = await apiRequest('/organizations/', 'GET');
+                const projects = await apiRequest('/projects/', 'GET');
+                const tasks = await apiRequest('/tasks/', 'GET');
+
+                document.getElementById('orgCount').textContent = orgs.count || 0;
+                document.getElementById('projectCount').textContent = projects.count || 0;
+                document.getElementById('taskCount').textContent = tasks.count || 0;
+
+                const pending = (tasks.results || []).filter(t => t.status === 'pending').length;
+                document.getElementById('pendingTaskCount').textContent = pending;
+
+                const userInfo = document.getElementById('userInfo');
+                if (userInfo && CURRENT_USER) {
+                    userInfo.innerHTML = `
+                        <p><strong>Email:</strong> ${CURRENT_USER.email}</p>
+                        <p><strong>Name:</strong> ${CURRENT_USER.first_name || ''} ${CURRENT_USER.last_name || ''}</p>
+                        <p><strong>Joined:</strong> ${formatDate(CURRENT_USER.created_at)}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                showError('Failed to load data');
+            }
+        }
+    </script>
+</body>
+</html>
