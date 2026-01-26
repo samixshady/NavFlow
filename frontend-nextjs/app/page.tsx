@@ -177,50 +177,46 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen overflow-hidden relative bg-black font-['Inter'] text-white flex items-center justify-center">
+    <div className="min-h-screen relative bg-black font-['Inter'] text-white flex items-center justify-center overflow-x-hidden">
       {/* Enhanced Gradient Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Gradient Spheres with animations */}
         <div 
-          className="absolute w-[40vw] h-[40vw] rounded-full opacity-80"
+          className="absolute w-[40vw] h-[40vw] rounded-full opacity-80 animate-sphere-1"
           style={{
             background: 'linear-gradient(40deg, rgba(255, 0, 128, 0.8), rgba(255, 102, 0, 0.4))',
             filter: 'blur(60px)',
             top: '-10%',
-            left: '-10%',
-            animation: 'float-1 15s ease-in-out infinite alternate'
+            left: '-10%'
           }}
         ></div>
         
         <div 
-          className="absolute w-[45vw] h-[45vw] rounded-full opacity-80"
+          className="absolute w-[45vw] h-[45vw] rounded-full opacity-80 animate-sphere-2"
           style={{
             background: 'linear-gradient(240deg, rgba(72, 0, 255, 0.8), rgba(0, 183, 255, 0.4))',
             filter: 'blur(60px)',
             bottom: '-20%',
-            right: '-10%',
-            animation: 'float-2 18s ease-in-out infinite alternate'
+            right: '-10%'
           }}
         ></div>
         
         <div 
-          className="absolute w-[30vw] h-[30vw] rounded-full opacity-50"
+          className="absolute w-[30vw] h-[30vw] rounded-full opacity-50 animate-sphere-3"
           style={{
             background: 'linear-gradient(120deg, rgba(133, 89, 255, 0.5), rgba(98, 216, 249, 0.3))',
             filter: 'blur(60px)',
             top: '60%',
-            left: '20%',
-            animation: 'float-3 20s ease-in-out infinite alternate'
+            left: '20%'
           }}
         ></div>
 
         {/* Central Glow */}
         <div 
-          className="absolute w-[40vw] h-[40vh] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-2"
+          className="absolute w-[40vw] h-[40vh] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-2 animate-pulse-glow"
           style={{
             background: 'radial-gradient(circle, rgba(72, 0, 255, 0.15), transparent 70%)',
-            filter: 'blur(30px)',
-            animation: 'pulse 8s infinite alternate'
+            filter: 'blur(30px)'
           }}
         ></div>
 
@@ -243,43 +239,23 @@ export default function Home() {
         ></div>
       </div>
 
-      {/* Keyframes styles */}
-      <style jsx>{`
-        @keyframes float-1 {
-          0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(10%, 10%) scale(1.1); }
-        }
-        @keyframes float-2 {
-          0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(-10%, -5%) scale(1.15); }
-        }
-        @keyframes float-3 {
-          0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-          100% { transform: translate(-5%, 10%) scale(1.05); opacity: 0.6; }
-        }
-        @keyframes pulse {
-          0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); }
-          100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); }
-        }
-      `}</style>
-
       {/* Content Container */}
-      <div className="relative z-10 w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 items-center gap-8">
+      <div className="relative z-10 w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-0 flex flex-col lg:justify-center">
         
-        {/* Top Left - Made by Sami & Buttons */}
-        <div className="absolute top-6 left-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 z-20">
-          <p className="text-sm font-medium text-gray-300">
+        {/* Top Section - Made by Sami & Buttons */}
+        <div className="pb-6 lg:pb-0 lg:absolute lg:top-12 lg:left-8 lg:right-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 lg:gap-3 z-20">
+          <p className="text-lg sm:text-xl lg:text-lg font-medium text-gray-300 whitespace-nowrap">
             Made by{' '}
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold">
               Sami
             </span>
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-row gap-2 lg:gap-3">
             <a
               href="https://github.com/samixshady"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white text-sm font-medium hover:from-purple-600/30 hover:to-pink-600/30 transition-all duration-300 backdrop-blur-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white text-base font-medium hover:from-purple-600/30 hover:to-pink-600/30 transition-all duration-300 backdrop-blur-sm"
             >
               <Github className="w-4 h-4" />
               GitHub
@@ -288,7 +264,7 @@ export default function Home() {
               href="https://github.com/samixshady/NavFlow"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 text-white text-sm font-medium hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 backdrop-blur-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 text-white text-base font-medium hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 backdrop-blur-sm"
             >
               <Code2 className="w-4 h-4" />
               Source Code
@@ -296,31 +272,35 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Main Content Grid */}
+        <div className="flex-1 lg:flex lg:items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-start lg:items-center gap-8 lg:gap-12 w-full">
+
         {/* Middle Left - Big NavFlow Title */}
-        <div className="lg:col-span-7 flex flex-col justify-center space-y-8">
+        <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:space-y-8">
           <div className="text-center lg:text-left">
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-4 lg:mb-6">
               <span className="text-white drop-shadow-lg">Nav</span>
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Flow</span>
             </h1>
             
             {/* Project Description */}
-            <div className="space-y-6 mt-8">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight">
+            <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-8">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
                 Project Management
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Made Simple
                 </span>
               </h2>
-              <p className="text-lg text-gray-300 leading-relaxed max-w-2xl">
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed max-w-2xl">
                 Collaborate seamlessly with your team, manage projects efficiently, and deliver on time. NavFlow provides all the tools you need for modern project management in one intuitive platform.
               </p>
               
               {/* Read More Button */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-purple-500/25"
+                className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-purple-500/25"
               >
                 Read More
                 <ArrowRight className="w-5 h-5" />
@@ -330,12 +310,23 @@ export default function Home() {
         </div>
 
         {/* Middle Right - Login Form */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end">
-          <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
+          <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
             {/* Toggle Buttons */}
             <div className="flex mb-6 bg-white/5 p-1 rounded-lg">
               <button
-                onClick={() => setIsLogin(true)}
+                onClick={() => {
+                  setIsLogin(true);
+                  setError('');
+                  setSuccess('');
+                  setFormData({
+                    email: '',
+                    first_name: '',
+                    last_name: '',
+                    password: '',
+                    password_confirm: '',
+                  });
+                }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                   isLogin 
                     ? 'bg-white/10 text-white shadow-md' 
@@ -345,7 +336,13 @@ export default function Home() {
                 Sign In
               </button>
               <button
-                onClick={() => setIsLogin(false)}
+                onClick={() => {
+                  setIsLogin(false);
+                  setError('');
+                  setSuccess('');
+                  setEmail('');
+                  setPassword('');
+                }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                   !isLogin 
                     ? 'bg-white/10 text-white shadow-md' 
@@ -442,10 +439,20 @@ export default function Home() {
                 </button>
 
                 {/* Demo Credentials */}
-                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg mt-6">
-                  <p className="text-xs font-semibold text-purple-300 mb-2">Demo Credentials:</p>
-                  <p className="text-xs text-gray-400 mb-1">📧 projectowner@example.com</p>
-                  <p className="text-xs text-gray-400">🔑 TestPass123!</p>
+                <div 
+                  className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg mt-6 cursor-pointer hover:bg-purple-500/20 hover:border-purple-500/40 transition-all"
+                  onClick={() => {
+                    setEmail('projectowner@example.com');
+                    setPassword('TestPass123!');
+                  }}
+                >
+                  <p className="text-s font-semibold text-purple-300 mb-2">Demo Credentials (click to use):</p>
+                  <p className="text-s text-gray-400 mb-1">
+                    📧 projectowner@example.com
+                  </p>
+                  <p className="text-s text-gray-400">
+                    🔑 TestPass123!
+                  </p>
                 </div>
               </form>
             ) : (
@@ -577,6 +584,8 @@ export default function Home() {
               </form>
             )}
           </div>
+        </div>
+        </div>
         </div>
       </div>
 
