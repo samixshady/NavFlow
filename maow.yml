@@ -1,0 +1,61 @@
+# NavFlow - Phase 4 & 5 Complete
+
+## 🚀 STARTUP (2 Terminal Windows Required)
+
+### Terminal 1: Backend API
+venv\Scripts\activate
+python manage.py runserver
+→ Runs on http://localhost:8000
+
+### Terminal 2: Frontend Server
+cd frontend
+python -m http.server 8001
+→ Runs on http://localhost:8001
+
+---
+
+## 🌐 Access Points
+
+### Frontend UI
+http://localhost:8001/login.html
+Login with: projectowner@example.com / TestPass123!
+
+### Backend API Docs (Phase 5 - Interactive)
+http://localhost:8000/api/docs/ ← TRY THIS FIRST!
+
+### Admin Panel
+http://localhost:8000/admin/
+
+---
+
+## 🎯 What to Try
+
+1. **Login**: http://localhost:8001/login.html
+2. **Create Project**: Click "Projects" → Create
+3. **Create Task**: Click "Tasks" → Create with filters
+4. **View Audit Logs**: http://localhost:8000/api/docs/ → Search "audit-logs"
+5. **Swagger Testing**: http://localhost:8000/api/docs/ (try pagination, filtering, search)
+
+---
+
+## ✨ Phase 4 & 5 Features
+
+Phase 4 (Soft Delete & Service Layer):
+✓ Tasks soft delete (marked with deleted_at)
+✓ Business logic in service layer
+✓ Auto audit logging
+
+Phase 5 (Production Ready):
+✓ Pagination (25/page)
+✓ Filtering (project, status, priority, assignee)
+✓ Search (title, description)
+✓ Audit logs (who/what/when)
+✓ Swagger docs (interactive)
+✓ Deployment config (Render)
+
+---
+
+## 📖 Documentation
+QUICK_START.md - Complete guide
+PHASE_4_5_SUMMARY.md - What was built
+README.md - Full documentation

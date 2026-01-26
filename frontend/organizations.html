@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizations - NavFlow</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">NavFlow</h1>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="organizations.html" class="nav-link active">Organizations</a></li>
+                <li><a href="#" id="logoutBtn" class="nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <section class="org-container">
+            <!-- Create Organization Section -->
+            <div class="card">
+                <h2>Create Organization</h2>
+                <form id="createOrgForm" class="form">
+                    <div class="form-group">
+                        <label for="orgName">Organization Name</label>
+                        <input type="text" id="orgName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="orgDescription">Description (Optional)</label>
+                        <textarea id="orgDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Organization</button>
+                </form>
+                <div id="createOrgMessage" class="message-container"></div>
+            </div>
+
+            <!-- Organizations List -->
+            <div class="card">
+                <h2>My Organizations</h2>
+                <div id="orgsList" class="orgs-list">
+                    <p class="loading">Loading organizations...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Organization Detail Modal -->
+    <div id="orgModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2 id="modalTitle">Organization Details</h2>
+            
+            <!-- Organization Info -->
+            <div id="orgInfo" class="org-info"></div>
+            
+            <!-- Members Section -->
+            <div class="members-section">
+                <h3>Members</h3>
+                <div id="membersList" class="members-list"></div>
+            </div>
+            
+            <!-- Add Member Section -->
+            <div id="addMemberSection" style="display: none;">
+                <h3>Add Member</h3>
+                <form id="addMemberForm" class="form">
+                    <div class="form-group">
+                        <label for="memberEmail">Member Email</label>
+                        <input type="email" id="memberEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="memberRole">Role</label>
+                        <select id="memberRole" name="role">
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Member</button>
+                </form>
+                <div id="addMemberMessage" class="message-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="organizations.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Phase 5: Requirements file for deployment
+Django==6.0.1
+djangorestframework==3.16.1
+django-cors-headers==4.9.0
+djangorestframework-simplejwt==5.4.0
+psycopg2-binary==2.9.12
+python-decouple==3.8
+drf-spectacular==0.29.0
+django-filter==25.2
+gunicorn==23.0.0
+whitenoise==6.9.0
