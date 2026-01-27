@@ -96,6 +96,7 @@ class Task(models.Model):
     Task model that belongs to a project.
     Tasks are the work items in a project.
     Phase 4: Added soft delete (deleted_at) support
+    Phase 6: Added time tracking features
     """
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -113,12 +114,22 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(blank=True, null=True)  # Phase 4: Soft delete support
     
+    # Phase 6: Time tracking fields
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True, help_text="Estimated hours to complete")
+    time_spent_minutes = models.PositiveIntegerField(default=0, help_text="Total minutes spent on task")
+    started_at = models.DateTimeField(blank=True, null=True, help_text="When work started on this task")
+    completed_at = models.DateTimeField(blank=True, null=True, help_text="When task was completed")
+    is_timer_running = models.BooleanField(default=False, help_text="Whether timer is currently running")
+    timer_started_at = models.DateTimeField(blank=True, null=True, help_text="When the current timer session started")
+    position = models.PositiveIntegerField(default=0, help_text="Position in kanban column for ordering")
+    
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['position', '-created_at']
         indexes = [
             models.Index(fields=['project', 'status']),
             models.Index(fields=['assigned_to', 'status']),
             models.Index(fields=['deleted_at']),  # Phase 4: Index for soft delete filtering
+            models.Index(fields=['project', 'status', 'position']),  # Phase 6: For kanban ordering
         ]
     
     def __str__(self):
@@ -133,6 +144,32 @@ class Task(models.Model):
         """Phase 4: Mark task as deleted without removing from DB."""
         self.deleted_at = timezone.now()
         self.save()
+    
+    def start_timer(self):
+        """Phase 6: Start the task timer."""
+        if not self.is_timer_running:
+            self.is_timer_running = True
+            self.timer_started_at = timezone.now()
+            if not self.started_at:
+                self.started_at = timezone.now()
+            self.save()
+    
+    def stop_timer(self):
+        """Phase 6: Stop the task timer and add elapsed time."""
+        if self.is_timer_running and self.timer_started_at:
+            elapsed = timezone.now() - self.timer_started_at
+            self.time_spent_minutes += int(elapsed.total_seconds() / 60)
+            self.is_timer_running = False
+            self.timer_started_at = None
+            self.save()
+    
+    def get_time_spent_display(self):
+        """Phase 6: Get formatted time spent string."""
+        hours = self.time_spent_minutes // 60
+        minutes = self.time_spent_minutes % 60
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
 
 
 class AuditLog(models.Model):

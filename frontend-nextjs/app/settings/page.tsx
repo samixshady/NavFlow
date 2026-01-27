@@ -12,8 +12,10 @@ import {
   Save,
   Eye,
   EyeOff,
+  Bug,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
+import DebugAPI from '@/components/DebugAPI';
 import { useTheme } from '@/lib/theme-context';
 import { useAuthStore } from '@/lib/store';
 
@@ -23,7 +25,7 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'appearance'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'appearance' | 'debug'>('profile');
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -50,6 +52,7 @@ export default function SettingsPage() {
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'appearance', name: 'Appearance', icon: theme === 'dark' ? Moon : Sun },
+    { id: 'debug', name: 'Debug', icon: Bug },
   ];
 
   return (
@@ -261,6 +264,10 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'debug' && (
+          <DebugAPI />
         )}
       </div>
     </DashboardLayout>

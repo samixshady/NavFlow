@@ -58,11 +58,13 @@ class Membership(models.Model):
     # Role choices
     OWNER = 'owner'
     ADMIN = 'admin'
+    MODERATOR = 'moderator'
     MEMBER = 'member'
     
     ROLE_CHOICES = [
         (OWNER, 'Owner'),
         (ADMIN, 'Admin'),
+        (MODERATOR, 'Moderator'),
         (MEMBER, 'Member'),
     ]
     
@@ -107,3 +109,75 @@ class Membership(models.Model):
         """Call full_clean before saving."""
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class Invitation(models.Model):
+    """
+    Invitation model for inviting users to organizations.
+    Users can be invited by their username.
+    """
+    PENDING = 'pending'
+    ACCEPTED = 'accepted'
+    DECLINED = 'declined'
+    EXPIRED = 'expired'
+    
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'),
+        (ACCEPTED, 'Accepted'),
+        (DECLINED, 'Declined'),
+        (EXPIRED, 'Expired'),
+    ]
+    
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='invitations')
+    invited_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_invitations')
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    role = models.CharField(max_length=20, choices=Membership.ROLE_CHOICES, default=Membership.MEMBER)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['invited_user', 'status']),
+            models.Index(fields=['organization', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"Invitation for {self.invited_user.email} to {self.organization.name} ({self.status})"
+    
+    def accept(self):
+        """Accept the invitation and create membership."""
+        from django.utils import timezone
+        if self.status != self.PENDING:
+            raise ValidationError("Can only accept pending invitations.")
+        
+        # Check if user is already a member
+        if Membership.objects.filter(user=self.invited_user, organization=self.organization).exists():
+            self.status = self.EXPIRED
+            self.responded_at = timezone.now()
+            self.save()
+            raise ValidationError("User is already a member of this organization.")
+        
+        # Create membership
+        Membership.objects.create(
+            user=self.invited_user,
+            organization=self.organization,
+            role=self.role
+        )
+        
+        self.status = self.ACCEPTED
+        self.responded_at = timezone.now()
+        self.save()
+        return True
+    
+    def decline(self):
+        """Decline the invitation."""
+        from django.utils import timezone
+        if self.status != self.PENDING:
+            raise ValidationError("Can only decline pending invitations.")
+        
+        self.status = self.DECLINED
+        self.responded_at = timezone.now()
+        self.save()
+        return True

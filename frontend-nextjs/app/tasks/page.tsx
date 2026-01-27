@@ -71,7 +71,13 @@ export default function TasksPage() {
   const fetchProjects = async () => {
     try {
       const response = await api.get('/projects/');
-      setProjects(Array.isArray(response.data) ? response.data : []);
+      // Handle paginated response
+      const data = response.data;
+      if (data && data.results) {
+        setProjects(data.results);
+      } else {
+        setProjects(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
     }
@@ -81,7 +87,13 @@ export default function TasksPage() {
     try {
       setIsLoading(true);
       const response = await api.get('/tasks/');
-      setTasks(Array.isArray(response.data) ? response.data : []);
+      // Handle paginated response
+      const data = response.data;
+      if (data && data.results) {
+        setTasks(data.results);
+      } else {
+        setTasks(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {

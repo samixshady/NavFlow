@@ -56,19 +56,31 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       
-      // Fetch projects
+      // Fetch projects (handle paginated response)
       const projectsRes = await api.get('/projects/');
-      const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
+      const projectsData = projectsRes.data;
+      const projects = projectsData?.results 
+        ? projectsData.results 
+        : (Array.isArray(projectsData) ? projectsData : []);
       
-      // For now, we'll use mock task data since we need to check the API
-      // In a real scenario, you'd fetch this from your tasks endpoint
-      const taskCount = projects.length * 5; // Mock: 5 tasks per project
-      const completedTasks = Math.floor(taskCount * 0.6); // Mock: 60% completed
+      // Fetch organizations
+      const orgsRes = await api.get('/orgs/');
+      const orgsData = orgsRes.data;
+      const orgs = Array.isArray(orgsData) ? orgsData : [];
+      
+      // Fetch tasks (handle paginated response)
+      const tasksRes = await api.get('/tasks/');
+      const tasksData = tasksRes.data;
+      const tasks = tasksData?.results 
+        ? tasksData.results 
+        : (Array.isArray(tasksData) ? tasksData : []);
+      
+      const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
       
       setStats({
         projectCount: projects.length,
-        taskCount: taskCount,
-        orgCount: 1, // Mock data
+        taskCount: tasks.length,
+        orgCount: orgs.length,
         completedTasks: completedTasks,
       });
       

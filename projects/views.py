@@ -370,6 +370,108 @@ class TaskViewSet(viewsets.ModelViewSet):
                 {'detail': str(e)},
                 status=status.HTTP_403_FORBIDDEN
             )
+    
+    @action(detail=True, methods=['post'])
+    def start_timer(self, request, pk=None):
+        """Phase 6: Start the task timer."""
+        task = self.get_object()
+        
+        # Check if user has permission (assigned to or project member)
+        if not ProjectRole.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        task.start_timer()
+        return Response(TaskSerializer(task).data)
+    
+    @action(detail=True, methods=['post'])
+    def stop_timer(self, request, pk=None):
+        """Phase 6: Stop the task timer."""
+        task = self.get_object()
+        
+        if not ProjectRole.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        task.stop_timer()
+        return Response(TaskSerializer(task).data)
+    
+    @action(detail=True, methods=['post'])
+    def add_time(self, request, pk=None):
+        """Phase 6: Manually add time to a task."""
+        task = self.get_object()
+        
+        if not ProjectRole.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        minutes = request.data.get('minutes', 0)
+        try:
+            minutes = int(minutes)
+            if minutes < 0:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return Response(
+                {'detail': 'Minutes must be a positive integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        task.time_spent_minutes += minutes
+        task.save()
+        return Response(TaskSerializer(task).data)
+    
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        """Phase 6: Reorder tasks for kanban board drag-and-drop."""
+        tasks_data = request.data.get('tasks', [])
+        
+        if not tasks_data:
+            return Response(
+                {'detail': 'tasks array is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate all tasks exist and user has access
+        task_ids = [t.get('id') for t in tasks_data]
+        user_tasks = Task.get_active().filter(
+            id__in=task_ids,
+            project__roles__user=request.user
+        ).distinct()
+        
+        if user_tasks.count() != len(task_ids):
+            return Response(
+                {'detail': 'One or more tasks not found or not accessible'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update positions and statuses
+        for task_data in tasks_data:
+            task_id = task_data.get('id')
+            position = task_data.get('position', 0)
+            new_status = task_data.get('status')
+            
+            task = user_tasks.get(id=task_id)
+            task.position = position
+            if new_status and new_status in ['todo', 'in_progress', 'review', 'done']:
+                old_status = task.status
+                task.status = new_status
+                # If moved to done, record completion time
+                if new_status == 'done' and old_status != 'done':
+                    task.completed_at = timezone.now()
+                    # Stop timer if running
+                    if task.is_timer_running:
+                        task.stop_timer()
+                elif new_status != 'done' and old_status == 'done':
+                    task.completed_at = None
+            task.save()
+        
+        return Response({'detail': 'Tasks reordered successfully'})
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

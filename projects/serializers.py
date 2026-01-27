@@ -26,15 +26,19 @@ class TaskSerializer(serializers.ModelSerializer):
     created_by_email = serializers.CharField(source='created_by.email', read_only=True, allow_null=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    time_spent_display = serializers.CharField(source='get_time_spent_display', read_only=True)
     
     class Meta:
         model = Task
         fields = [
-            'id', 'title', 'description', 'status', 'status_display',
-            'priority', 'priority_display', 'assigned_to_email', 'created_by_email',
-            'due_date', 'created_at', 'updated_at'
+            'id', 'title', 'description', 'project', 'project_name', 'status', 'status_display',
+            'priority', 'priority_display', 'assigned_to', 'assigned_to_email', 'created_by_email',
+            'due_date', 'created_at', 'updated_at', 'estimated_hours', 'time_spent_minutes',
+            'time_spent_display', 'started_at', 'completed_at', 'is_timer_running',
+            'timer_started_at', 'position'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'created_by_email']
+        read_only_fields = ['created_at', 'updated_at', 'created_by_email', 'time_spent_display']
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):

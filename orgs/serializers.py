@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Organization, Membership
+from .models import Organization, Membership, Invitation
 
 User = get_user_model()
 
@@ -104,6 +104,128 @@ class AddMemberSerializer(serializers.Serializer):
         if role == Membership.OWNER and organization.get_owner():
             raise serializers.ValidationError(
                 {"role": "This organization already has an owner. Only one owner per organization is allowed."}
+            )
+        
+        return data
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+    """Serializer for viewing invitations."""
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    invited_user_email = serializers.CharField(source='invited_user.email', read_only=True)
+    invited_user_username = serializers.CharField(source='invited_user.username', read_only=True)
+    invited_by_email = serializers.CharField(source='invited_by.email', read_only=True)
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    class Meta:
+        model = Invitation
+        fields = [
+            'id', 'organization', 'organization_name', 
+            'invited_user_email', 'invited_user_username',
+            'invited_by_email', 'role', 'role_display',
+            'status', 'status_display', 'created_at', 'responded_at'
+        ]
+        read_only_fields = fields
+
+
+class CreateInvitationSerializer(serializers.Serializer):
+    """Serializer for creating an invitation by email or username."""
+    identifier = serializers.CharField(max_length=255, help_text="Username or email of the user to invite")
+    role = serializers.ChoiceField(
+        choices=[
+            (Membership.ADMIN, 'Admin'),
+            (Membership.MODERATOR, 'Moderator'),
+            (Membership.MEMBER, 'Member'),
+        ],
+        default=Membership.MEMBER
+    )
+    
+    def validate_identifier(self, value):
+        """Validate that the username or email exists."""
+        # Try to find user by email first, then by username
+        user = User.objects.filter(email=value).first()
+        if not user:
+            user = User.objects.filter(username=value).first()
+        if not user:
+            raise serializers.ValidationError(f"User '{value}' does not exist. Please enter a valid email or username.")
+        return value
+    
+    def validate(self, data):
+        """Additional validation."""
+        organization = self.context.get('organization')
+        inviting_user = self.context.get('user')
+        identifier = data.get('identifier')
+        
+        # Find user by email or username
+        user = User.objects.filter(email=identifier).first()
+        if not user:
+            user = User.objects.filter(username=identifier).first()
+        
+        # Can't invite yourself
+        if user == inviting_user:
+            raise serializers.ValidationError(
+                {"identifier": "You cannot invite yourself."}
+            )
+        
+        # Check if user is already a member
+        if Membership.objects.filter(user=user, organization=organization).exists():
+            raise serializers.ValidationError(
+                {"identifier": f"{identifier} is already a member of this organization."}
+            )
+        
+        # Check if there's already a pending invitation
+        if Invitation.objects.filter(
+            invited_user=user, 
+            organization=organization, 
+            status=Invitation.PENDING
+        ).exists():
+            raise serializers.ValidationError(
+                {"identifier": f"There's already a pending invitation for {identifier}."}
+            )
+        
+        return data
+
+
+class UpdateMemberRoleSerializer(serializers.Serializer):
+    """Serializer for updating a member's role."""
+    user_email = serializers.EmailField()
+    role = serializers.ChoiceField(
+        choices=[
+            (Membership.ADMIN, 'Admin'),
+            (Membership.MODERATOR, 'Moderator'),
+            (Membership.MEMBER, 'Member'),
+        ]
+    )
+    
+    def validate_user_email(self, value):
+        """Validate that the email corresponds to an existing user."""
+        try:
+            User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+        return value
+    
+    def validate(self, data):
+        """Validate role change."""
+        organization = self.context.get('organization')
+        requesting_user = self.context.get('user')
+        email = data.get('user_email')
+        
+        user = User.objects.get(email=email)
+        
+        # Check if target user is a member
+        try:
+            membership = Membership.objects.get(user=user, organization=organization)
+        except Membership.DoesNotExist:
+            raise serializers.ValidationError(
+                {"user_email": "User is not a member of this organization."}
+            )
+        
+        # Can't change owner's role
+        if membership.role == Membership.OWNER:
+            raise serializers.ValidationError(
+                {"user_email": "Cannot change the owner's role."}
             )
         
         return data

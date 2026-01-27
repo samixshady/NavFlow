@@ -89,7 +89,13 @@ export default function ProjectsPage() {
     try {
       setIsLoading(true);
       const response = await api.get('/projects/');
-      setProjects(Array.isArray(response.data) ? response.data : []);
+      // Handle paginated response (DRF returns {count, results} for paginated data)
+      const data = response.data;
+      if (data && data.results) {
+        setProjects(data.results);
+      } else {
+        setProjects(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -196,6 +202,8 @@ export default function ProjectsPage() {
       case 'owner':
         return <Crown className="w-4 h-4" />;
       case 'admin':
+        return <Shield className="w-4 h-4" />;
+      case 'moderator':
         return <Shield className="w-4 h-4" />;
       default:
         return <UserIcon className="w-4 h-4" />;

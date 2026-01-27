@@ -13,6 +13,10 @@ import {
   Crown,
   Shield,
   User as UserIcon,
+  CheckCircle,
+  Mail,
+  Clock,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -23,7 +27,7 @@ interface Organization {
   name: string;
   description: string;
   member_count: number;
-  user_role: 'owner' | 'admin' | 'member';
+  user_role: 'owner' | 'admin' | 'moderator' | 'member';
   owner_email: string;
   created_at: string;
 }
@@ -33,6 +37,20 @@ interface Member {
   user_name: string;
   role: string;
   role_display: string;
+}
+
+interface Invitation {
+  id: number;
+  organization: number;
+  organization_name: string;
+  invited_user_email: string;
+  invited_user_username: string;
+  invited_by_email: string;
+  role: string;
+  role_display: string;
+  status: string;
+  status_display: string;
+  created_at: string;
 }
 
 export default function OrganizationsPage() {
@@ -45,14 +63,19 @@ export default function OrganizationsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
+  const [orgInvitations, setOrgInvitations] = useState<Invitation[]>([]);
   
   // Form states
   const [orgName, setOrgName] = useState('');
   const [orgDescription, setOrgDescription] = useState('');
+  const [inviteUsername, setInviteUsername] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
   const [memberRole, setMemberRole] = useState('member');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -60,24 +83,35 @@ export default function OrganizationsPage() {
       router.push('/');
     } else {
       fetchOrganizations();
+      fetchPendingInvitations();
     }
   }, [router]);
+
+  const fetchPendingInvitations = async () => {
+    try {
+      const response = await api.get('/orgs/invitations/');
+      setPendingInvitations(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching invitations:', error);
+    }
+  };
 
   const fetchOrganizations = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching organizations from API...');
       const response = await api.get('/orgs/');
       console.log('Organizations API response:', response.data);
-      // Filter to show only organizations created by the logged-in user (where they are owner)
-      const allOrgs = Array.isArray(response.data) ? response.data : [];
-      const userOrgs = allOrgs.filter((org: Organization) => {
-        console.log(`Org "${org.name}" - user_role: "${org.user_role}"`);
-        return org.user_role === 'owner';
-      });
-      console.log('Filtered owner organizations:', userOrgs);
-      setOrganizations(userOrgs);
+      console.log('Response type:', typeof response.data, 'Is Array:', Array.isArray(response.data));
+      console.log('Number of organizations:', Array.isArray(response.data) ? response.data.length : 0);
+      // Show all organizations the user belongs to (created as owner or invited to)
+      setOrganizations(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching organizations:', error);
+      if (error.response) {
+        console.error('Error response status:', error.response.status);
+        console.error('Error response data:', error.response.data);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,28 +128,134 @@ export default function OrganizationsPage() {
     }
 
     try {
-      await api.post('/orgs/', {
+      console.log('Creating organization with data:', { name: orgName, description: orgDescription });
+      console.log('User creating org:', user);
+      
+      const response = await api.post('/orgs/', {
         name: orgName,
         description: orgDescription,
       });
-      setSuccess('Organization created successfully!');
+      
+      console.log('Organization created successfully:', response.data);
+      console.log('Created org ID:', response.data.id);
+      
+      // Close modal first
+      setIsCreateModalOpen(false);
+      
+      // Show success toast
+      setSuccess(`Organization "${orgName}" created successfully!`);
+      setShowSuccessToast(true);
+      
+      // Reset form
       setOrgName('');
       setOrgDescription('');
-      setIsCreateModalOpen(false);
-      fetchOrganizations();
+      
+      // Fetch updated list
+      await fetchOrganizations();
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        setSuccess('');
+      }, 5000);
     } catch (err: any) {
-      setError(err.response?.data?.name?.[0] || 'Failed to create organization');
+      console.error('Error creating organization:', err);
+      console.error('Error response:', err.response);
+      console.error('Error request:', err.config);
+      
+      const errorMessage = err.response?.data?.name?.[0] 
+        || err.response?.data?.detail 
+        || err.response?.data?.error
+        || (err.response?.data ? JSON.stringify(err.response.data) : '')
+        || err.message
+        || 'Failed to create organization';
+      setError(errorMessage);
     }
   };
 
   const openOrgDetail = async (org: Organization) => {
     setSelectedOrg(org);
     setIsDetailModalOpen(true);
+    setError('');
+    setSuccess('');
     try {
-      const response = await api.get(`/orgs/${org.id}/members/`);
-      setMembers(response.data);
+      const [membersRes, invitationsRes] = await Promise.all([
+        api.get(`/orgs/${org.id}/members/`),
+        (org.user_role === 'owner' || org.user_role === 'admin') 
+          ? api.get(`/orgs/${org.id}/invitations/`)
+          : Promise.resolve({ data: [] })
+      ]);
+      setMembers(membersRes.data);
+      setOrgInvitations(invitationsRes.data);
     } catch (error) {
-      console.error('Error fetching members:', error);
+      console.error('Error fetching organization details:', error);
+    }
+  };
+
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!selectedOrg || !inviteUsername.trim()) {
+      setError('Email or username is required');
+      return;
+    }
+
+    try {
+      await api.post(`/orgs/${selectedOrg.id}/invite/`, {
+        identifier: inviteUsername,
+        role: inviteRole,
+      });
+      setSuccess(`Invitation sent to ${inviteUsername}!`);
+      setInviteUsername('');
+      setInviteRole('member');
+      // Refresh invitations
+      const response = await api.get(`/orgs/${selectedOrg.id}/invitations/`);
+      setOrgInvitations(response.data);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail 
+        || err.response?.data?.identifier?.[0]
+        || (typeof err.response?.data === 'object' ? JSON.stringify(err.response?.data) : '')
+        || 'Failed to send invitation';
+      setError(errorMessage);
+    }
+  };
+
+  const handleAcceptInvitation = async (invitationId: number) => {
+    try {
+      await api.post(`/orgs/invitations/${invitationId}/accept/`);
+      setSuccess('Invitation accepted! You are now a member.');
+      fetchOrganizations();
+      fetchPendingInvitations();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to accept invitation');
+    }
+  };
+
+  const handleDeclineInvitation = async (invitationId: number) => {
+    try {
+      await api.post(`/orgs/invitations/${invitationId}/decline/`);
+      setSuccess('Invitation declined.');
+      fetchPendingInvitations();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to decline invitation');
+    }
+  };
+
+  const handleUpdateRole = async (email: string, newRole: string) => {
+    if (!selectedOrg) return;
+    
+    try {
+      await api.post(`/orgs/${selectedOrg.id}/update_role/`, {
+        user_email: email,
+        role: newRole,
+      });
+      setSuccess('Role updated successfully!');
+      const response = await api.get(`/orgs/${selectedOrg.id}/members/`);
+      setMembers(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update role');
     }
   };
 
@@ -168,6 +308,8 @@ export default function OrganizationsPage() {
         return <Crown className="w-4 h-4" />;
       case 'admin':
         return <Shield className="w-4 h-4" />;
+      case 'moderator':
+        return <Shield className="w-4 h-4" />;
       default:
         return <UserIcon className="w-4 h-4" />;
     }
@@ -179,6 +321,8 @@ export default function OrganizationsPage() {
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'admin':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'moderator':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
@@ -197,23 +341,56 @@ export default function OrganizationsPage() {
 
   return (
     <DashboardLayout>
+      {/* Success Toast */}
+      {showSuccessToast && success && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 max-w-md">
+            <CheckCircle className="w-6 h-6 flex-shrink-0" />
+            <div>
+              <p className="font-semibold">{success}</p>
+              <p className="text-sm text-green-100">Your organization has been saved to the database.</p>
+            </div>
+            <button
+              onClick={() => setShowSuccessToast(false)}
+              className="ml-4 text-white hover:text-green-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            My Organizations
+            Organizations
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Organizations you created and own
+            Manage organizations you own or are a member of
           </p>
         </div>
-        <button 
-          onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
-        >
-          <Plus className="w-5 h-5" />
-          New Organization
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={fetchOrganizations}
+            className="inline-flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            title="Refresh organizations list"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+          >
+            <Plus className="w-5 h-5" />
+            New Organization
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -229,6 +406,47 @@ export default function OrganizationsPage() {
           />
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-blue-500" />
+            Pending Invitations ({pendingInvitations.length})
+          </h3>
+          <div className="space-y-3">
+            {pendingInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+              >
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {invitation.organization_name}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Invited by {invitation.invited_by_email} as {invitation.role_display}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAcceptInvitation(invitation.id)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleDeclineInvitation(invitation.id)}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Organizations Grid */}
       {filteredOrganizations.length === 0 ? (
@@ -253,8 +471,8 @@ export default function OrganizationsPage() {
           {filteredOrganizations.map((org) => (
             <div
               key={org.id}
-              onClick={() => openOrgDetail(org)}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg dark:hover:shadow-purple-500/10 transition-all cursor-pointer group"
+              onClick={() => router.push(`/organizations/${org.id}`)}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg dark:hover:shadow-purple-500/10 hover:border-purple-500 dark:hover:border-purple-500 transition-all cursor-pointer group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -399,23 +617,27 @@ export default function OrganizationsPage() {
             {/* Add Member (only for owners and admins) */}
             {(selectedOrg.user_role === 'owner' || selectedOrg.user_role === 'admin') && (
               <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Member</h3>
-                <form onSubmit={handleAddMember} className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Invite Member
+                </h3>
+                <form onSubmit={handleInviteMember} className="space-y-3">
                   <div className="flex gap-3">
                     <input
-                      type="email"
-                      value={memberEmail}
-                      onChange={(e) => setMemberEmail(e.target.value)}
-                      placeholder="Enter email address"
+                      type="text"
+                      value={inviteUsername}
+                      onChange={(e) => setInviteUsername(e.target.value)}
+                      placeholder="Enter email or username"
                       className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       required
                     />
                     <select
-                      value={memberRole}
-                      onChange={(e) => setMemberRole(e.target.value)}
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
                       className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="member">Member</option>
+                      <option value="moderator">Moderator</option>
                       <option value="admin">Admin</option>
                     </select>
                     <button
@@ -423,10 +645,30 @@ export default function OrganizationsPage() {
                       className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                     >
                       <UserPlus className="w-4 h-4" />
-                      Add
+                      Invite
                     </button>
                   </div>
                 </form>
+
+                {/* Pending Org Invitations */}
+                {orgInvitations.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Pending Invitations
+                    </p>
+                    <div className="space-y-2">
+                      {orgInvitations.map((inv) => (
+                        <div key={inv.id} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg text-sm">
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {inv.invited_user_username} ({inv.role_display})
+                          </span>
+                          <span className="text-xs text-gray-500">Pending</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -446,10 +688,23 @@ export default function OrganizationsPage() {
                       <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
-                        {getRoleIcon(member.role)}
-                        {member.role_display}
-                      </span>
+                      {/* Role Badge or Dropdown for owner */}
+                      {selectedOrg.user_role === 'owner' && member.role !== 'owner' ? (
+                        <select
+                          value={member.role}
+                          onChange={(e) => handleUpdateRole(member.user_email, e.target.value)}
+                          className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getRoleColor(member.role)}`}
+                        >
+                          <option value="member">Member</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                          {getRoleIcon(member.role)}
+                          {member.role_display}
+                        </span>
+                      )}
                       {selectedOrg.user_role === 'owner' && member.role !== 'owner' && (
                         <button
                           onClick={() => handleRemoveMember(member.user_email)}
