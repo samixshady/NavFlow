@@ -7,6 +7,52 @@ from orgs.models import Organization
 User = get_user_model()
 
 
+class TaskSection(models.Model):
+    """
+    Phase 7: Custom task sections/tabs for projects.
+    Allows mods and admins to create custom workflow stages.
+    """
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='sections')
+    name = models.CharField(max_length=100)
+    slug = models.CharField(max_length=100)  # URL-friendly version of name
+    color = models.CharField(max_length=7, default='#6366f1', help_text="Hex color code for the tab")
+    icon = models.CharField(max_length=50, blank=True, null=True, help_text="Icon name from lucide-react")
+    position = models.PositiveIntegerField(default=0, help_text="Order of the section in tabs")
+    is_default = models.BooleanField(default=False, help_text="Whether this is a default section")
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_sections')
+    
+    class Meta:
+        ordering = ['position']
+        unique_together = ('project', 'slug')
+        indexes = [
+            models.Index(fields=['project', 'position']),
+        ]
+    
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.name.lower().replace(' ', '_').replace('-', '_')
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def create_default_sections(cls, project, user):
+        """Create default sections for a new project."""
+        defaults = [
+            {'name': 'To Do', 'slug': 'todo', 'color': '#6b7280', 'position': 0, 'is_default': True},
+            {'name': 'In Progress', 'slug': 'in_progress', 'color': '#3b82f6', 'position': 1, 'is_default': True},
+            {'name': 'In Review', 'slug': 'review', 'color': '#f59e0b', 'position': 2, 'is_default': True},
+            {'name': 'Done', 'slug': 'done', 'color': '#10b981', 'position': 3, 'is_default': True},
+        ]
+        sections = []
+        for default in defaults:
+            section = cls.objects.create(project=project, created_by=user, **default)
+            sections.append(section)
+        return sections
+
+
 class ProjectRole(models.Model):
     """
     Role for users within a project.
@@ -97,6 +143,7 @@ class Task(models.Model):
     Tasks are the work items in a project.
     Phase 4: Added soft delete (deleted_at) support
     Phase 6: Added time tracking features
+    Phase 7: Added section support for custom workflow stages
     """
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -104,6 +151,8 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_tasks')
     status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.TODO)
+    # Phase 7: Section for custom workflow stages (optional, falls back to status if null)
+    section = models.ForeignKey(TaskSection, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     priority = models.CharField(
         max_length=20,
         choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('urgent', 'Urgent')],
@@ -130,6 +179,7 @@ class Task(models.Model):
             models.Index(fields=['assigned_to', 'status']),
             models.Index(fields=['deleted_at']),  # Phase 4: Index for soft delete filtering
             models.Index(fields=['project', 'status', 'position']),  # Phase 6: For kanban ordering
+            models.Index(fields=['project', 'section', 'position']),  # Phase 7: For section ordering
         ]
     
     def __str__(self):

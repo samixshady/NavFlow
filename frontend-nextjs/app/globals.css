@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
+/* Configure dark mode to use class strategy */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Root element for dark mode */
 :root {
   color-scheme: light;
 }
 
-:root.dark {
+:root.dark,
+html.dark {
   color-scheme: dark;
 }
 

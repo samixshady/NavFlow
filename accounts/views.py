@@ -1,5 +1,5 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,8 +9,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
     UserRegistrationSerializer,
     CustomTokenObtainPairSerializer,
-    UserDetailSerializer
+    UserDetailSerializer,
+    UserProfileUpdateSerializer,
+    NotificationSerializer
 )
+from .models import Notification
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -103,3 +106,56 @@ class LogoutView(APIView):
                 {'error': 'Invalid token.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class UserProfileView(APIView):
+    """
+    Phase 7: API endpoint for updating user profile.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        serializer = UserDetailSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request):
+        serializer = UserProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(UserDetailSerializer(request.user).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    Phase 7: ViewSet for managing notifications.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+    
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def unread(self, request):
+        """Get only unread notifications."""
+        notifications = self.get_queryset().filter(is_read=False)[:20]
+        serializer = self.get_serializer(notifications, many=True)
+        return Response({
+            'count': self.get_queryset().filter(is_read=False).count(),
+            'results': serializer.data
+        })
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications as read."""
+        self.get_queryset().filter(is_read=False).update(is_read=True)
+        return Response({'message': 'All notifications marked as read'})
+    
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark a single notification as read."""
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response(self.get_serializer(notification).data)

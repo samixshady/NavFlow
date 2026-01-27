@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
@@ -6,9 +7,15 @@ from .views import (
     LoginView,
     UserDetailView,
     LogoutView,
+    UserProfileView,
+    NotificationViewSet,
 )
 
 app_name = 'accounts'
+
+# Phase 7: Router for notification viewset
+router = DefaultRouter()
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     # Authentication endpoints
@@ -22,4 +29,10 @@ urlpatterns = [
     
     # User detail endpoint
     path('user/', UserDetailView.as_view(), name='user_detail'),
+    
+    # Phase 7: Profile endpoint
+    path('profile/', UserProfileView.as_view(), name='user_profile'),
+    
+    # Phase 7: Notification routes
+    path('', include(router.urls)),
 ]

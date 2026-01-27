@@ -1,8 +1,21 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Project, Task, ProjectRole, AuditLog
+from .models import Project, Task, ProjectRole, AuditLog, TaskSection
 
 User = get_user_model()
+
+
+class TaskSectionSerializer(serializers.ModelSerializer):
+    """Phase 7: Serializer for task sections."""
+    task_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TaskSection
+        fields = ['id', 'name', 'slug', 'color', 'icon', 'position', 'is_default', 'task_count', 'created_at']
+        read_only_fields = ['id', 'created_at', 'task_count']
+    
+    def get_task_count(self, obj):
+        return obj.tasks.filter(deleted_at__isnull=True).count()
 
 
 class ProjectRoleSerializer(serializers.ModelSerializer):
@@ -28,11 +41,14 @@ class TaskSerializer(serializers.ModelSerializer):
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
     time_spent_display = serializers.CharField(source='get_time_spent_display', read_only=True)
+    section_name = serializers.CharField(source='section.name', read_only=True, allow_null=True)
+    section_color = serializers.CharField(source='section.color', read_only=True, allow_null=True)
     
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 'project', 'project_name', 'status', 'status_display',
+            'section', 'section_name', 'section_color',
             'priority', 'priority_display', 'assigned_to', 'assigned_to_email', 'created_by_email',
             'due_date', 'created_at', 'updated_at', 'estimated_hours', 'time_spent_minutes',
             'time_spent_display', 'started_at', 'completed_at', 'is_timer_running',
@@ -50,6 +66,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     task_count = serializers.SerializerMethodField()
     roles = ProjectRoleSerializer(many=True, read_only=True)
     tasks = TaskSerializer(many=True, read_only=True)
+    sections = TaskSectionSerializer(many=True, read_only=True)  # Phase 7: Include sections
     user_role = serializers.SerializerMethodField()
     
     class Meta:
@@ -57,11 +74,11 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'organization_name', 'status',
             'owner_email', 'member_count', 'task_count', 'user_role',
-            'roles', 'tasks', 'created_by_email', 'created_at', 'updated_at'
+            'roles', 'tasks', 'sections', 'created_by_email', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'organization_name', 'owner_email', 'member_count',
-            'task_count', 'roles', 'tasks', 'created_by_email', 'created_at', 'updated_at'
+            'task_count', 'roles', 'tasks', 'sections', 'created_by_email', 'created_at', 'updated_at'
         ]
     
     def get_owner_email(self, obj):

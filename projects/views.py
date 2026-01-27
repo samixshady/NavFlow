@@ -6,14 +6,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .models import Project, Task, ProjectRole, AuditLog
+from django.db import models
+from .models import Project, Task, ProjectRole, AuditLog, TaskSection
 from .serializers import (
     ProjectDetailSerializer,
     ProjectListSerializer,
     TaskSerializer,
     ProjectRoleSerializer,
     AddProjectMemberSerializer,
-    AuditLogSerializer
+    AuditLogSerializer,
+    TaskSectionSerializer
 )
 from .permissions import (
     IsProjectMember,
@@ -24,6 +26,7 @@ from .permissions import (
 )
 from .services import TaskService, ProjectService
 from orgs.models import Membership
+from accounts.models import Notification
 
 User = get_user_model()
 
@@ -115,6 +118,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
             project=project,
             role=ProjectRole.OWNER
         )
+        
+        # Phase 7: Create default sections for the project
+        TaskSection.create_default_sections(project, request.user)
         
         return Response(
             ProjectDetailSerializer(project, context=self.get_serializer_context()).data,
@@ -320,6 +326,21 @@ class TaskViewSet(viewsets.ModelViewSet):
                 due_date=serializer.validated_data.get('due_date')
             )
             
+            # Phase 7: Send notification if task is assigned to someone
+            assigned_to = serializer.validated_data.get('assigned_to')
+            if assigned_to and assigned_to != request.user:
+                Notification.objects.create(
+                    user=assigned_to,
+                    type='task_assigned',
+                    title='New Task Assigned',
+                    message=f'You have been assigned to "{task.title}" in {project.name}',
+                    link=f'/tasks?task={task.id}',
+                    related_task_id=task.id,
+                    related_project_id=project.id,
+                    actor_id=request.user.id,
+                    actor_name=request.user.get_full_name()
+                )
+            
             return Response(
                 TaskSerializer(task).data,
                 status=status.HTTP_201_CREATED
@@ -333,16 +354,32 @@ class TaskViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         """Phase 4: Update task via service layer with audit logging."""
         task = self.get_object()
+        old_assigned_to = task.assigned_to
         
         try:
             # Phase 4: Use service layer for validation
             update_data = {}
-            for field in ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date']:
+            for field in ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'section']:
                 if field in request.data:
                     update_data[field] = request.data[field]
             
             if update_data:
                 TaskService.update_task(request.user, task, **update_data)
+            
+            # Phase 7: Send notification if assignee changed
+            new_assigned_to = task.assigned_to
+            if new_assigned_to and new_assigned_to != old_assigned_to and new_assigned_to != request.user:
+                Notification.objects.create(
+                    user=new_assigned_to,
+                    type='task_assigned',
+                    title='Task Assigned to You',
+                    message=f'You have been assigned to "{task.title}" in {task.project.name}',
+                    link=f'/tasks?task={task.id}',
+                    related_task_id=task.id,
+                    related_project_id=task.project.id,
+                    actor_id=request.user.id,
+                    actor_name=request.user.get_full_name()
+                )
             
             return Response(
                 TaskSerializer(task).data,
@@ -489,3 +526,167 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         org_ids = Membership.objects.filter(user=user).values_list('organization_id', flat=True)
         return AuditLog.objects.filter(organization_id__in=org_ids)
+
+
+class TaskSectionViewSet(viewsets.ModelViewSet):
+    """
+    Phase 7: ViewSet for managing custom task sections.
+    Only moderators and above can create/update/delete sections.
+    """
+    serializer_class = TaskSectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return sections for projects where user is a member."""
+        user = self.request.user
+        project_id = self.request.query_params.get('project_id')
+        
+        queryset = TaskSection.objects.filter(
+            project__roles__user=user
+        ).select_related('project').distinct()
+        
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        
+        return queryset.order_by('position')
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new section. Only moderators and above."""
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return Response(
+                {'detail': 'project_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Project not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check user has moderator role or higher
+        try:
+            user_role = ProjectRole.objects.get(user=request.user, project=project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN, ProjectRole.MODERATOR]:
+                return Response(
+                    {'detail': 'Only moderators and above can create sections'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except ProjectRole.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get the next position
+        max_position = TaskSection.objects.filter(project=project).aggregate(
+            max_pos=models.Max('position')
+        )['max_pos'] or -1
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        section = TaskSection.objects.create(
+            project=project,
+            name=serializer.validated_data['name'],
+            slug=serializer.validated_data.get('slug', ''),
+            color=serializer.validated_data.get('color', '#6366f1'),
+            icon=serializer.validated_data.get('icon'),
+            position=max_position + 1,
+            created_by=request.user
+        )
+        
+        return Response(
+            TaskSectionSerializer(section).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def update(self, request, *args, **kwargs):
+        """Update section. Only moderators and above."""
+        section = self.get_object()
+        
+        try:
+            user_role = ProjectRole.objects.get(user=request.user, project=section.project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN, ProjectRole.MODERATOR]:
+                return Response(
+                    {'detail': 'Only moderators and above can update sections'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except ProjectRole.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete section. Cannot delete default sections. Only moderators and above."""
+        section = self.get_object()
+        
+        if section.is_default:
+            return Response(
+                {'detail': 'Cannot delete default sections'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            user_role = ProjectRole.objects.get(user=request.user, project=section.project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN, ProjectRole.MODERATOR]:
+                return Response(
+                    {'detail': 'Only moderators and above can delete sections'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except ProjectRole.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Move tasks in this section to the first default section
+        default_section = TaskSection.objects.filter(
+            project=section.project,
+            is_default=True
+        ).first()
+        
+        if default_section:
+            Task.objects.filter(section=section).update(section=default_section)
+        
+        return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        """Reorder sections within a project."""
+        project_id = request.data.get('project_id')
+        sections_order = request.data.get('sections', [])  # [{id: 1, position: 0}, ...]
+        
+        if not project_id or not sections_order:
+            return Response(
+                {'detail': 'project_id and sections array required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            project = Project.objects.get(id=project_id)
+            user_role = ProjectRole.objects.get(user=request.user, project=project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN, ProjectRole.MODERATOR]:
+                return Response(
+                    {'detail': 'Only moderators and above can reorder sections'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except (Project.DoesNotExist, ProjectRole.DoesNotExist):
+            return Response(
+                {'detail': 'Project not found or not accessible'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        for section_data in sections_order:
+            TaskSection.objects.filter(
+                id=section_data['id'],
+                project=project
+            ).update(position=section_data['position'])
+        
+        return Response({'detail': 'Sections reordered successfully'})

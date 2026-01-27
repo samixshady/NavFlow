@@ -64,10 +64,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
         `}
       >
         <div className="flex flex-col h-full">
-          {/* Logo Section */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          {/* Logo Section - h-16 matches Navbar height exactly */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <span className="text-white font-bold text-lg">N</span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">

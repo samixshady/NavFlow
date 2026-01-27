@@ -3,6 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from .models import Notification
 
 User = get_user_model()
 
@@ -104,9 +105,78 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     """
     Serializer for reading user details.
-    Does not expose password.
+    Phase 7: Extended with profile fields.
+    """
+    full_name = serializers.SerializerMethodField()
+    initials = serializers.SerializerMethodField()
+    unread_notifications_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'full_name', 'initials',
+            'avatar', 'bio', 'job_title', 'department', 'phone', 'location',
+            'linkedin_url', 'github_url', 'website_url',
+            'notification_email', 'notification_push', 'theme_preference',
+            'date_joined', 'last_login', 'unread_notifications_count'
+        ]
+        read_only_fields = ['id', 'date_joined', 'last_login', 'full_name', 'initials', 'unread_notifications_count']
+    
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+    
+    def get_initials(self, obj):
+        return obj.get_initials()
+    
+    def get_unread_notifications_count(self, obj):
+        return obj.notifications.filter(is_read=False).count()
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Phase 7: Serializer for updating user profile.
     """
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'date_joined', 'last_login']
-        read_only_fields = ['id', 'date_joined', 'last_login']
+        fields = [
+            'first_name', 'last_name', 'avatar', 'bio', 'job_title', 'department',
+            'phone', 'location', 'linkedin_url', 'github_url', 'website_url',
+            'notification_email', 'notification_push', 'theme_preference'
+        ]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """
+    Phase 7: Serializer for notifications.
+    """
+    time_ago = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'type', 'title', 'message', 'link', 'is_read',
+            'created_at', 'time_ago', 'related_task_id', 'related_project_id',
+            'actor_id', 'actor_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'time_ago']
+    
+    def get_time_ago(self, obj):
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now()
+        diff = now - obj.created_at
+        
+        if diff < timedelta(minutes=1):
+            return "Just now"
+        elif diff < timedelta(hours=1):
+            mins = int(diff.total_seconds() / 60)
+            return f"{mins}m ago"
+        elif diff < timedelta(days=1):
+            hours = int(diff.total_seconds() / 3600)
+            return f"{hours}h ago"
+        elif diff < timedelta(days=7):
+            days = diff.days
+            return f"{days}d ago"
+        else:
+            return obj.created_at.strftime("%b %d")
