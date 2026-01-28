@@ -3,20 +3,76 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from orgs.models import Organization
+import re
 
 User = get_user_model()
+
+
+class TaskLabel(models.Model):
+    """
+    Phase 8: Custom labels for tasks with colors, icons, and descriptions.
+    Labels can be project-specific or organization-wide.
+    """
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=7, default='#6366f1', help_text="Hex color code")
+    bg_color = models.CharField(max_length=7, default='#eef2ff', help_text="Background color for light mode")
+    icon = models.CharField(max_length=50, blank=True, null=True, help_text="Icon name from lucide-react")
+    description = models.CharField(max_length=200, blank=True, null=True)
+    banner_url = models.URLField(max_length=500, blank=True, null=True, help_text="Optional banner image URL")
+    
+    # Scope: can be org-wide or project-specific
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='task_labels', null=True, blank=True)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='labels', null=True, blank=True)
+    
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_labels')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_default = models.BooleanField(default=False, help_text="Default labels available to all")
+    
+    class Meta:
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['organization']),
+            models.Index(fields=['project']),
+        ]
+    
+    def __str__(self):
+        return self.name
+    
+    @classmethod
+    def get_default_labels(cls):
+        """Get or create default labels."""
+        defaults = [
+            {'name': 'Bug', 'color': '#ef4444', 'bg_color': '#fef2f2', 'icon': 'Bug', 'is_default': True},
+            {'name': 'Feature', 'color': '#10b981', 'bg_color': '#ecfdf5', 'icon': 'Sparkles', 'is_default': True},
+            {'name': 'Enhancement', 'color': '#3b82f6', 'bg_color': '#eff6ff', 'icon': 'Zap', 'is_default': True},
+            {'name': 'Documentation', 'color': '#8b5cf6', 'bg_color': '#f5f3ff', 'icon': 'FileText', 'is_default': True},
+            {'name': 'Urgent', 'color': '#f59e0b', 'bg_color': '#fffbeb', 'icon': 'AlertTriangle', 'is_default': True},
+            {'name': 'Help Wanted', 'color': '#ec4899', 'bg_color': '#fdf2f8', 'icon': 'HelpCircle', 'is_default': True},
+        ]
+        labels = []
+        for default in defaults:
+            label, _ = cls.objects.get_or_create(
+                name=default['name'],
+                is_default=True,
+                defaults=default
+            )
+            labels.append(label)
+        return labels
 
 
 class TaskSection(models.Model):
     """
     Phase 7: Custom task sections/tabs for projects.
     Allows mods and admins to create custom workflow stages.
+    Phase 8: Enhanced with descriptions, icons, and banners.
     """
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='sections')
     name = models.CharField(max_length=100)
     slug = models.CharField(max_length=100)  # URL-friendly version of name
     color = models.CharField(max_length=7, default='#6366f1', help_text="Hex color code for the tab")
     icon = models.CharField(max_length=50, blank=True, null=True, help_text="Icon name from lucide-react")
+    description = models.CharField(max_length=200, blank=True, null=True, help_text="Section description")
+    banner_url = models.URLField(max_length=500, blank=True, null=True, help_text="Optional banner image URL")
     position = models.PositiveIntegerField(default=0, help_text="Order of the section in tabs")
     is_default = models.BooleanField(default=False, help_text="Whether this is a default section")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -144,15 +200,22 @@ class Task(models.Model):
     Phase 4: Added soft delete (deleted_at) support
     Phase 6: Added time tracking features
     Phase 7: Added section support for custom workflow stages
+    Phase 8: Added labels, focus mode, enhanced descriptions
     """
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    rich_description = models.TextField(blank=True, null=True, help_text="Rich text description with formatting")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    # Store deleted user info for reference
+    assigned_to_username = models.CharField(max_length=30, blank=True, null=True, help_text="Preserved username if user deleted")
+    assigned_to_deleted = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_tasks')
     status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.TODO)
     # Phase 7: Section for custom workflow stages (optional, falls back to status if null)
     section = models.ForeignKey(TaskSection, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+    # Phase 8: Labels
+    labels = models.ManyToManyField(TaskLabel, blank=True, related_name='tasks')
     priority = models.CharField(
         max_length=20,
         choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('urgent', 'Urgent')],
@@ -220,6 +283,100 @@ class Task(models.Model):
         if hours > 0:
             return f"{hours}h {minutes}m"
         return f"{minutes}m"
+
+
+class TaskAttachment(models.Model):
+    """
+    Phase 8: Attachments for tasks (images, videos, PDFs, etc.).
+    """
+    ATTACHMENT_TYPES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('document', 'Document'),
+        ('pdf', 'PDF'),
+        ('other', 'Other'),
+    ]
+    
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='attachments')
+    file_url = models.URLField(max_length=500, help_text="URL to the file")
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPES, default='other')
+    file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
+    mime_type = models.CharField(max_length=100, blank=True, null=True)
+    thumbnail_url = models.URLField(max_length=500, blank=True, null=True, help_text="Thumbnail for images/videos")
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='uploaded_attachments')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['task', '-uploaded_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.file_name} on {self.task.title}"
+
+
+class TaskComment(models.Model):
+    """
+    Phase 8: Comments on tasks with @mention support.
+    """
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='task_comments')
+    # Store author info in case user is deleted
+    author_username = models.CharField(max_length=30, blank=True, null=True)
+    author_name = models.CharField(max_length=255, blank=True, null=True)
+    author_deleted = models.BooleanField(default=False)
+    
+    content = models.TextField()
+    # Mentions stored as list of usernames
+    mentions = models.JSONField(default=list, blank=True, help_text="List of mentioned usernames")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_edited = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['task', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Comment by {self.author_username or 'Unknown'} on {self.task.title}"
+    
+    def save(self, *args, **kwargs):
+        # Extract @mentions from content
+        if self.content:
+            mentions = re.findall(r'@(\w+)', self.content)
+            self.mentions = list(set(mentions))
+        
+        # Store author info
+        if self.author and not self.author_username:
+            self.author_username = self.author.username
+            self.author_name = self.author.get_full_name()
+        
+        super().save(*args, **kwargs)
+
+
+class FocusedTask(models.Model):
+    """
+    Phase 8: Focus mode - users can focus on specific tasks in their personal space.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='focused_tasks')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='focused_by')
+    focused_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True, help_text="Personal notes for this focus session")
+    
+    class Meta:
+        unique_together = ('user', 'task')
+        ordering = ['-focused_at']
+        indexes = [
+            models.Index(fields=['user', '-focused_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} focusing on {self.task.title}"
 
 
 class AuditLog(models.Model):

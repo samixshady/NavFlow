@@ -234,8 +234,9 @@ export default function ProjectsPage() {
     );
   }  return (
     <DashboardLayout>
+      <div className="flex flex-col min-h-0 flex-1">
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Projects
@@ -254,7 +255,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-8">
+      <div className="mb-6 flex-shrink-0">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -268,6 +269,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Projects Grid */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       {filteredProjects.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <Folder className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
@@ -325,6 +327,8 @@ export default function ProjectsPage() {
           ))}
         </div>
       )}
+      </div>
+      </div>
 
       {/* Create Project Modal */}
       {isCreateModalOpen && (

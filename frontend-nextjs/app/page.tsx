@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User } from 'lucide-react';
+import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User, AtSign } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 
@@ -16,6 +16,7 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     first_name: '',
     last_name: '',
     password: '',
@@ -91,8 +92,19 @@ export default function Home() {
     setSuccess('');
 
     // Validation
-    if (!formData.email || !formData.first_name || !formData.last_name || !formData.password || !formData.password_confirm) {
+    if (!formData.email || !formData.username || !formData.first_name || !formData.last_name || !formData.password || !formData.password_confirm) {
       setError('All fields are required');
+      return;
+    }
+
+    // Username validation
+    if (formData.username.length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      setError('Username can only contain letters, numbers, and underscores');
       return;
     }
 
@@ -130,12 +142,16 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error('Registration error:', err);
+      console.error('Registration error response:', err.response?.data);
       let message = 'Registration failed. Please try again.';
       
       if (err.response?.status === 400) {
         const data = err.response.data;
+        // Try to extract the first error message
         if (data.email) {
           message = Array.isArray(data.email) ? data.email[0] : data.email;
+        } else if (data.username) {
+          message = Array.isArray(data.username) ? data.username[0] : data.username;
         } else if (data.password) {
           message = Array.isArray(data.password) ? data.password[0] : data.password;
         } else if (data.password_confirm) {
@@ -144,10 +160,19 @@ export default function Home() {
           message = Array.isArray(data.first_name) ? data.first_name[0] : data.first_name;
         } else if (data.last_name) {
           message = Array.isArray(data.last_name) ? data.last_name[0] : data.last_name;
+        } else if (data.non_field_errors) {
+          message = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
         } else if (data.detail) {
           message = data.detail;
         } else if (data.message) {
           message = data.message;
+        } else if (typeof data === 'object') {
+          // Try to get any error message from the response
+          const firstKey = Object.keys(data)[0];
+          if (firstKey) {
+            const val = data[firstKey];
+            message = Array.isArray(val) ? val[0] : String(val);
+          }
         }
       } else if (err.response?.data?.detail) {
         message = err.response.data.detail;
@@ -169,6 +194,7 @@ export default function Home() {
     setPassword('');
     setFormData({
       email: '',
+      username: '',
       first_name: '',
       last_name: '',
       password: '',
@@ -240,10 +266,10 @@ export default function Home() {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-10 w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-0 flex flex-col lg:justify-center">
+      <div className="relative z-10 w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
         
         {/* Top Section - Made by Sami & Buttons */}
-        <div className="pb-6 lg:pb-0 lg:absolute lg:top-12 lg:left-8 lg:right-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 lg:gap-3 z-20">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 lg:mb-8">
           <p className="text-lg sm:text-xl lg:text-lg font-medium text-gray-300 whitespace-nowrap">
             Made by{' '}
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold">
@@ -273,8 +299,8 @@ export default function Home() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="flex-1 lg:flex lg:items-center">
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-start lg:items-center gap-8 lg:gap-12 w-full">
+        <div className="flex-1 flex items-center justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 w-full">
 
         {/* Middle Left - Big NavFlow Title */}
         <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:space-y-8">
@@ -311,9 +337,9 @@ export default function Home() {
 
         {/* Middle Right - Login Form */}
         <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
-          <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-180px)] overflow-y-auto">
             {/* Toggle Buttons */}
-            <div className="flex mb-6 bg-white/5 p-1 rounded-lg">
+            <div className="flex mb-4 bg-white/5 p-1 rounded-lg">
               <button
                 onClick={() => {
                   setIsLogin(true);
@@ -321,6 +347,7 @@ export default function Home() {
                   setSuccess('');
                   setFormData({
                     email: '',
+                    username: '',
                     first_name: '',
                     last_name: '',
                     password: '',
@@ -353,40 +380,40 @@ export default function Home() {
               </button>
             </div>
 
-            <h3 className="text-2xl font-bold text-white mb-6 text-center">
+            <h3 className="text-xl font-bold text-white mb-4 text-center">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h3>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-3">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-red-300 text-sm">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex gap-3">
-                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
                 <p className="text-green-300 text-sm">{success}</p>
               </div>
             )}
 
             {isLogin ? (
               /* Login Form */
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <form onSubmit={handleLoginSubmit} className="space-y-3">
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Address
+                  <label className="block text-xs font-medium text-gray-300 mb-1">
+                    Email or Username
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-500" />
+                    <Mail className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-500" />
                     <input
-                      type="email"
+                      type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
+                      placeholder="you@example.com or username"
+                      className="w-full pl-9 pr-4 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
                       disabled={loading}
                       required
                     />
@@ -395,26 +422,26 @@ export default function Home() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs font-medium text-gray-300 mb-1">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-500" />
+                    <Lock className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-500" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
+                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
                       disabled={loading}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-300 transition"
+                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-300 transition"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -423,7 +450,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-6 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full mt-4 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -457,22 +484,22 @@ export default function Home() {
               </form>
             ) : (
               /* Registration Form */
-              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <form onSubmit={handleRegisterSubmit} className="space-y-3">
                 {/* Name Fields */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
+                    <label className="block text-xs font-medium text-gray-200 mb-1">
                       First Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                      <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         name="first_name"
                         value={formData.first_name}
                         onChange={handleChange}
                         placeholder="John"
-                        className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                         disabled={loading}
                         required
                       />
@@ -480,18 +507,18 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
+                    <label className="block text-xs font-medium text-gray-200 mb-1">
                       Last Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                      <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         name="last_name"
                         value={formData.last_name}
                         onChange={handleChange}
                         placeholder="Doe"
-                        className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                         disabled={loading}
                         required
                       />
@@ -501,74 +528,98 @@ export default function Home() {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-2">
+                  <label className="block text-xs font-medium text-gray-200 mb-1">
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
                   </div>
                 </div>
 
+                {/* Username */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-200 mb-1">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      placeholder="johndoe"
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition lowercase"
+                      disabled={loading}
+                      required
+                      minLength={3}
+                      maxLength={30}
+                      pattern="[a-zA-Z0-9_]+"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">Letters, numbers, underscores only</p>
+                </div>
+
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-2">
+                  <label className="block text-xs font-medium text-gray-200 mb-1">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-300"
+                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-300"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-2">
+                  <label className="block text-xs font-medium text-gray-200 mb-1">
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="password_confirm"
                       value={formData.password_confirm}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-300"
+                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-300"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -577,7 +628,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-6"
+                  className="w-full py-2 px-4 text-sm bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-4"
                 >
                   {loading ? 'Creating account...' : 'Create Account'}
                 </button>

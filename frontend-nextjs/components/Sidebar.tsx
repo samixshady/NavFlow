@@ -12,7 +12,8 @@ import {
   LogOut,
   X,
   Menu,
-  Building2
+  Building2,
+  Focus
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 
@@ -26,6 +27,7 @@ const navItems = [
   { name: 'Organizations', href: '/organizations', icon: Building2 },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'My Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Focus Mode', href: '/focus', icon: Focus },
   { name: 'Activity Log', href: '/activity', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Menu, 
   Search, 
@@ -21,7 +22,8 @@ import {
   Linkedin,
   Globe,
   ChevronRight,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuthStore } from '@/lib/store';
@@ -41,6 +43,10 @@ interface Notification {
   created_at: string;
   time_ago: string;
   actor_name: string | null;
+  actor_username: string | null;
+  action_status: 'pending' | 'accepted' | 'declined' | null;
+  action_data: any | null;
+  related_org_id: number | null;
 }
 
 interface UserProfile {
@@ -65,6 +71,21 @@ interface UserProfile {
   unread_notifications_count: number;
 }
 
+interface SearchResult {
+  id: number;
+  name: string;
+  description?: string;
+  type: 'project' | 'task' | 'organization';
+  status?: string;
+  organization_name?: string;
+}
+
+interface SearchResults {
+  projects: SearchResult[];
+  tasks: SearchResult[];
+  organizations: SearchResult[];
+}
+
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
@@ -77,6 +98,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResults>({ projects: [], tasks: [], organizations: [] });
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Edit profile form state
   const [editForm, setEditForm] = useState({
@@ -103,7 +132,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get('/auth/profile/');
+        const response = await api.get('/accounts/profile/');
         setProfile(response.data);
         setUnreadCount(response.data.unread_notifications_count || 0);
         setEditForm({
@@ -138,7 +167,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await api.get('/auth/notifications/unread/');
+      const response = await api.get('/accounts/notifications/unread/');
       setUnreadCount(response.data.count || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
@@ -148,7 +177,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const fetchNotifications = async () => {
     setIsLoadingNotifications(true);
     try {
-      const response = await api.get('/auth/notifications/unread/');
+      const response = await api.get('/accounts/notifications/unread/');
       setNotifications(response.data.results || []);
       setUnreadCount(response.data.count || 0);
     } catch (error) {
@@ -160,7 +189,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const markNotificationRead = async (id: number) => {
     try {
-      await api.post(`/auth/notifications/${id}/mark_read/`);
+      await api.post(`/accounts/notifications/${id}/mark_read/`);
       setNotifications(notifications.map(n => 
         n.id === id ? { ...n, is_read: true } : n
       ));
@@ -172,11 +201,41 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const markAllRead = async () => {
     try {
-      await api.post('/auth/notifications/mark_all_read/');
+      await api.post('/accounts/notifications/mark_all_read/');
       setNotifications(notifications.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const handleAcceptInvitation = async (notificationId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/accounts/notifications/${notificationId}/accept/`);
+      setNotifications(notifications.map(n => 
+        n.id === notificationId 
+          ? { ...n, action_status: 'accepted', is_read: true } 
+          : n
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+    }
+  };
+
+  const handleDeclineInvitation = async (notificationId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/accounts/notifications/${notificationId}/decline/`);
+      setNotifications(notifications.map(n => 
+        n.id === notificationId 
+          ? { ...n, action_status: 'declined', is_read: true } 
+          : n
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error('Error declining invitation:', error);
     }
   };
 
@@ -193,7 +252,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      const response = await api.patch('/auth/profile/', editForm);
+      const response = await api.patch('/accounts/profile/', editForm);
       setProfile(response.data);
       setIsEditProfileOpen(false);
     } catch (error) {
@@ -210,6 +269,88 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     router.push('/');
   };
 
+  // Debounced search function
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults({ projects: [], tasks: [], organizations: [] });
+      setIsSearchOpen(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setIsSearchOpen(true);
+
+    try {
+      // Search projects, tasks, and organizations in parallel
+      const [projectsRes, tasksRes, orgsRes] = await Promise.all([
+        api.get(`/projects/?search=${encodeURIComponent(query)}`).catch(() => ({ data: { results: [] } })),
+        api.get(`/projects/tasks/?search=${encodeURIComponent(query)}`).catch(() => ({ data: { results: [] } })),
+        api.get(`/orgs/?search=${encodeURIComponent(query)}`).catch(() => ({ data: [] }))
+      ]);
+
+      const projects = (projectsRes.data.results || projectsRes.data || []).slice(0, 5).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        type: 'project' as const,
+        status: p.status,
+        organization_name: p.organization_name
+      }));
+
+      const tasks = (tasksRes.data.results || tasksRes.data || []).slice(0, 5).map((t: any) => ({
+        id: t.id,
+        name: t.title,
+        description: t.description,
+        type: 'task' as const,
+        status: t.status
+      }));
+
+      const organizations = (orgsRes.data.results || orgsRes.data || []).slice(0, 5).map((o: any) => ({
+        id: o.id,
+        name: o.name,
+        description: o.description,
+        type: 'organization' as const
+      }));
+
+      setSearchResults({ projects, tasks, organizations });
+    } catch (error) {
+      console.error('Error searching:', error);
+      setSearchResults({ projects: [], tasks: [], organizations: [] });
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      performSearch(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, performSearch]);
+
+  const handleSearchResultClick = (result: SearchResult) => {
+    setSearchTerm('');
+    setIsSearchOpen(false);
+    
+    switch (result.type) {
+      case 'project':
+        router.push(`/projects/${result.id}`);
+        break;
+      case 'task':
+        router.push(`/tasks`);
+        break;
+      case 'organization':
+        router.push(`/organizations/${result.id}`);
+        break;
+    }
+  };
+
+  const hasSearchResults = searchResults.projects.length > 0 || 
+                          searchResults.tasks.length > 0 || 
+                          searchResults.organizations.length > 0;
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -219,10 +360,25 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSearchOpen(false);
+        setIsNotificationsOpen(false);
+        setIsProfileOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const getNotificationIcon = (type: string) => {
@@ -252,14 +408,166 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </button>
 
           {/* Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-md">
+          <div className="hidden md:flex items-center flex-1 max-w-md" ref={searchRef}>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search projects, tasks..."
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
+                placeholder="Search projects, tasks, organizations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => searchTerm && setIsSearchOpen(true)}
+                className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
               />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+              )}
+              {!isSearching && searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setIsSearchOpen(false);
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Search Results Dropdown */}
+              {isSearchOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">Searching...</span>
+                    </div>
+                  ) : !hasSearchResults ? (
+                    <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                      <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No results found for "{searchTerm}"</p>
+                    </div>
+                  ) : (
+                    <div className="py-2">
+                      {/* Projects Section */}
+                      {searchResults.projects.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                            Projects
+                          </div>
+                          {searchResults.projects.map((result) => (
+                            <button
+                              key={`project-${result.id}`}
+                              onClick={() => handleSearchResultClick(result)}
+                              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                            >
+                              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                                <FolderKanban className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {result.name}
+                                </p>
+                                {result.organization_name && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {result.organization_name}
+                                  </p>
+                                )}
+                              </div>
+                              {result.status && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  result.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                  result.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                                }`}>
+                                  {result.status}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tasks Section */}
+                      {searchResults.tasks.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                            Tasks
+                          </div>
+                          {searchResults.tasks.map((result) => (
+                            <button
+                              key={`task-${result.id}`}
+                              onClick={() => handleSearchResultClick(result)}
+                              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                            >
+                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {result.name}
+                                </p>
+                                {result.description && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {result.description}
+                                  </p>
+                                )}
+                              </div>
+                              {result.status && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  result.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                  result.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                                }`}>
+                                  {result.status?.replace('_', ' ')}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Organizations Section */}
+                      {searchResults.organizations.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                            Organizations
+                          </div>
+                          {searchResults.organizations.map((result) => (
+                            <button
+                              key={`org-${result.id}`}
+                              onClick={() => handleSearchResultClick(result)}
+                              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                            >
+                              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                                <Building2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {result.name}
+                                </p>
+                                {result.description && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {result.description}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Keyboard shortcut hint */}
+                  <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>Press Enter to search all</span>
+                    <span>ESC to close</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -325,10 +633,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     </div>
                   ) : (
                     notifications.map((notification) => (
-                      <button
+                      <div
                         key={notification.id}
                         onClick={() => handleNotificationClick(notification)}
-                        className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left ${
+                        className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer ${
                           !notification.is_read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
                         }`}
                       >
@@ -350,8 +658,44 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                             {notification.time_ago}
                           </p>
+                          
+                          {/* Invitation Actions */}
+                          {notification.type === 'invitation' && notification.action_status === 'pending' && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                onClick={(e) => handleAcceptInvitation(notification.id, e)}
+                                className="px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
+                              >
+                                <Check className="w-3 h-3" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={(e) => handleDeclineInvitation(notification.id, e)}
+                                className="px-3 py-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                              >
+                                <X className="w-3 h-3" />
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Show status if already acted upon */}
+                          {notification.type === 'invitation' && notification.action_status === 'accepted' && (
+                            <div className="mt-2">
+                              <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                                ✓ Accepted
+                              </span>
+                            </div>
+                          )}
+                          {notification.type === 'invitation' && notification.action_status === 'declined' && (
+                            <div className="mt-2">
+                              <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
+                                ✗ Declined
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </button>
+                      </div>
                     ))
                   )}
                 </div>

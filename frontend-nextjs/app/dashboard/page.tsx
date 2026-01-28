@@ -109,8 +109,9 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      <div className="flex flex-col min-h-0 flex-1">
       {/* Welcome Section */}
-      <div className="mb-8">
+      <div className="mb-6 flex-shrink-0">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
           Welcome back{user?.first_name ? `, ${user.first_name}` : ''}! 👋
         </h1>
@@ -119,6 +120,8 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto min-h-0 pb-4">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Projects Card */}
@@ -266,6 +269,8 @@ export default function Dashboard() {
             </Link>
           </div>
         </div>
+      </div>
+      </div>
       </div>
     </DashboardLayout>
   );

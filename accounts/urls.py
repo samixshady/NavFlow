@@ -9,6 +9,7 @@ from .views import (
     LogoutView,
     UserProfileView,
     NotificationViewSet,
+    AccountDeleteView,
 )
 
 app_name = 'accounts'
@@ -32,6 +33,9 @@ urlpatterns = [
     
     # Phase 7: Profile endpoint
     path('profile/', UserProfileView.as_view(), name='user_profile'),
+    
+    # Phase 8: Account deletion endpoint
+    path('delete-account/', AccountDeleteView.as_view(), name='delete_account'),
     
     # Phase 7: Notification routes
     path('', include(router.urls)),

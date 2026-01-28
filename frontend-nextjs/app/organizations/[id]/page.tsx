@@ -288,6 +288,7 @@ export default function OrganizationDetailPage() {
 
   return (
     <DashboardLayout>
+      <div className="flex flex-col min-h-0 flex-1">
       {/* Success/Error Notifications */}
       {(success || error) && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl max-w-md animate-slide-in ${
@@ -308,7 +309,7 @@ export default function OrganizationDetailPage() {
       )}
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 flex-shrink-0">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
           <Link href="/organizations" className="hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1">
@@ -479,7 +480,7 @@ export default function OrganizationDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6">
+      <div className="mb-4 flex-shrink-0">
         <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
           {(['overview', 'projects', 'members'] as const).map((tab) => (
             <button
@@ -498,6 +499,7 @@ export default function OrganizationDetailPage() {
       </div>
 
       {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto min-h-0 pb-8">
       <div className="animate-fade-in">
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -773,6 +775,8 @@ export default function OrganizationDetailPage() {
             </div>
           </div>
         )}
+      </div>
+      </div>
       </div>
 
       {/* Delete Confirmation Modal */}

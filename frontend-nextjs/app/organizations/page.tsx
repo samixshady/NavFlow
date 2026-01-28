@@ -106,7 +106,7 @@ export default function OrganizationsPage() {
       console.log('Number of organizations:', Array.isArray(response.data) ? response.data.length : 0);
       // Show all organizations the user belongs to (created as owner or invited to)
       setOrganizations(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching organizations:', error);
       if (error.response) {
         console.error('Error response status:', error.response.status);
@@ -160,15 +160,36 @@ export default function OrganizationsPage() {
       }, 5000);
     } catch (err: any) {
       console.error('Error creating organization:', err);
-      console.error('Error response:', err.response);
-      console.error('Error request:', err.config);
+      console.error('Error response data:', err.response?.data);
       
-      const errorMessage = err.response?.data?.name?.[0] 
-        || err.response?.data?.detail 
-        || err.response?.data?.error
-        || (err.response?.data ? JSON.stringify(err.response.data) : '')
-        || err.message
-        || 'Failed to create organization';
+      let errorMessage = 'Failed to create organization';
+      const data = err.response?.data;
+      
+      if (data) {
+        if (data.name) {
+          errorMessage = Array.isArray(data.name) ? data.name[0] : data.name;
+        } else if (data.description) {
+          errorMessage = Array.isArray(data.description) ? data.description[0] : data.description;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.non_field_errors) {
+          errorMessage = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (typeof data === 'object') {
+          // Get the first error from any field
+          const firstKey = Object.keys(data)[0];
+          if (firstKey) {
+            const val = data[firstKey];
+            errorMessage = Array.isArray(val) ? val[0] : String(val);
+          }
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
     }
   };
@@ -362,8 +383,9 @@ export default function OrganizationsPage() {
         </div>
       )}
 
+      <div className="flex flex-col min-h-0 flex-1">
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Organizations
@@ -394,7 +416,7 @@ export default function OrganizationsPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-8">
+      <div className="mb-6 flex-shrink-0">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -409,7 +431,7 @@ export default function OrganizationsPage() {
 
       {/* Pending Invitations */}
       {pendingInvitations.length > 0 && (
-        <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Mail className="w-5 h-5 text-blue-500" />
             Pending Invitations ({pendingInvitations.length})
@@ -449,6 +471,7 @@ export default function OrganizationsPage() {
       )}
 
       {/* Organizations Grid */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       {filteredOrganizations.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <Building2 className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
@@ -499,6 +522,8 @@ export default function OrganizationsPage() {
           ))}
         </div>
       )}
+      </div>
+      </div>
 
       {/* Create Organization Modal */}
       {isCreateModalOpen && (

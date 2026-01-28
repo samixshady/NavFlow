@@ -7,7 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import models
-from .models import Project, Task, ProjectRole, AuditLog, TaskSection
+from .models import Project, Task, ProjectRole, AuditLog, TaskSection, TaskLabel, TaskComment, TaskAttachment, FocusedTask
 from .serializers import (
     ProjectDetailSerializer,
     ProjectListSerializer,
@@ -15,7 +15,11 @@ from .serializers import (
     ProjectRoleSerializer,
     AddProjectMemberSerializer,
     AuditLogSerializer,
-    TaskSectionSerializer
+    TaskSectionSerializer,
+    TaskLabelSerializer,
+    TaskCommentSerializer,
+    TaskAttachmentSerializer,
+    FocusedTaskSerializer
 )
 from .permissions import (
     IsProjectMember,
@@ -690,3 +694,223 @@ class TaskSectionViewSet(viewsets.ModelViewSet):
             ).update(position=section_data['position'])
         
         return Response({'detail': 'Sections reordered successfully'})
+
+
+class TaskLabelViewSet(viewsets.ModelViewSet):
+    """
+    Phase 8: ViewSet for managing task labels.
+    """
+    serializer_class = TaskLabelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get labels accessible to the user (default + org/project specific)."""
+        user = self.request.user
+        org_ids = Membership.objects.filter(user=user).values_list('organization_id', flat=True)
+        project_ids = ProjectRole.objects.filter(user=user).values_list('project_id', flat=True)
+        
+        return TaskLabel.objects.filter(
+            models.Q(is_default=True) |
+            models.Q(organization_id__in=org_ids) |
+            models.Q(project_id__in=project_ids)
+        ).distinct()
+    
+    def create(self, request, *args, **kwargs):
+        """Create a custom label."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['get'])
+    def defaults(self, request):
+        """Get or create default labels."""
+        labels = TaskLabel.get_default_labels()
+        serializer = self.get_serializer(labels, many=True)
+        return Response(serializer.data)
+
+
+class TaskCommentViewSet(viewsets.ModelViewSet):
+    """
+    Phase 8: ViewSet for managing task comments.
+    """
+    serializer_class = TaskCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get comments for tasks in user's projects."""
+        user = self.request.user
+        project_ids = ProjectRole.objects.filter(user=user).values_list('project_id', flat=True)
+        
+        queryset = TaskComment.objects.filter(
+            task__project_id__in=project_ids
+        ).select_related('author', 'task')
+        
+        # Filter by task_id if provided
+        task_id = self.request.query_params.get('task_id')
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Create a comment and notify mentioned users."""
+        task_id = request.data.get('task')
+        
+        try:
+            task = Task.objects.get(id=task_id)
+            # Check if user has access to this task's project
+            ProjectRole.objects.get(user=request.user, project=task.project)
+        except Task.DoesNotExist:
+            return Response({'detail': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectRole.DoesNotExist:
+            return Response({'detail': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save(author=request.user)
+        
+        # Notify task assignee if not the commenter
+        if task.assigned_to and task.assigned_to != request.user:
+            Notification.objects.create(
+                user=task.assigned_to,
+                type='task_comment',
+                title='New Comment on Task',
+                message=f'{request.user.get_full_name()} commented on "{task.title}"',
+                link=f'/tasks?task={task.id}&comment={comment.id}',
+                related_task_id=task.id,
+                related_project_id=task.project.id,
+                related_comment_id=comment.id,
+                actor_id=request.user.id,
+                actor_name=request.user.get_full_name(),
+                actor_username=request.user.username
+            )
+        
+        # Notify mentioned users
+        for username in comment.mentions:
+            try:
+                mentioned_user = User.objects.get(username__iexact=username)
+                if mentioned_user != request.user:
+                    Notification.objects.create(
+                        user=mentioned_user,
+                        type='mention',
+                        title='You were mentioned',
+                        message=f'{request.user.get_full_name()} mentioned you in a comment on "{task.title}"',
+                        link=f'/tasks?task={task.id}&comment={comment.id}',
+                        related_task_id=task.id,
+                        related_project_id=task.project.id,
+                        related_comment_id=comment.id,
+                        actor_id=request.user.id,
+                        actor_name=request.user.get_full_name(),
+                        actor_username=request.user.username
+                    )
+            except User.DoesNotExist:
+                pass
+        
+        return Response(self.get_serializer(comment).data, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        """Update a comment (only by author)."""
+        comment = self.get_object()
+        if comment.author != request.user:
+            return Response({'detail': 'Only the author can edit this comment'}, status=status.HTTP_403_FORBIDDEN)
+        
+        comment.is_edited = True
+        return super().update(request, *args, **kwargs)
+
+
+class TaskAttachmentViewSet(viewsets.ModelViewSet):
+    """
+    Phase 8: ViewSet for managing task attachments.
+    """
+    serializer_class = TaskAttachmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get attachments for tasks in user's projects."""
+        user = self.request.user
+        project_ids = ProjectRole.objects.filter(user=user).values_list('project_id', flat=True)
+        
+        queryset = TaskAttachment.objects.filter(
+            task__project_id__in=project_ids
+        ).select_related('uploaded_by', 'task')
+        
+        # Filter by task_id if provided
+        task_id = self.request.query_params.get('task_id')
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Create an attachment."""
+        task_id = request.data.get('task')
+        
+        try:
+            task = Task.objects.get(id=task_id)
+            ProjectRole.objects.get(user=request.user, project=task.project)
+        except Task.DoesNotExist:
+            return Response({'detail': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectRole.DoesNotExist:
+            return Response({'detail': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(uploaded_by=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FocusedTaskViewSet(viewsets.ModelViewSet):
+    """
+    Phase 8: ViewSet for managing focused tasks (personal space).
+    """
+    serializer_class = FocusedTaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get user's focused tasks."""
+        return FocusedTask.objects.filter(
+            user=self.request.user
+        ).select_related('task', 'task__project', 'task__assigned_to')
+    
+    def create(self, request, *args, **kwargs):
+        """Focus on a task."""
+        task_id = request.data.get('task')
+        
+        try:
+            task = Task.objects.get(id=task_id)
+            ProjectRole.objects.get(user=request.user, project=task.project)
+        except Task.DoesNotExist:
+            return Response({'detail': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectRole.DoesNotExist:
+            return Response({'detail': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if already focused
+        focused, created = FocusedTask.objects.get_or_create(
+            user=request.user,
+            task=task,
+            defaults={'notes': request.data.get('notes', '')}
+        )
+        
+        if not created:
+            return Response(
+                {'detail': 'Task is already in your focus list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response(self.get_serializer(focused).data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'])
+    def unfocus(self, request, pk=None):
+        """Remove a task from focus."""
+        focused = self.get_object()
+        focused.delete()
+        return Response({'detail': 'Task removed from focus'})
+    
+    @action(detail=True, methods=['patch'])
+    def update_notes(self, request, pk=None):
+        """Update notes for a focused task."""
+        focused = self.get_object()
+        focused.notes = request.data.get('notes', '')
+        focused.save()
+        return Response(self.get_serializer(focused).data)
