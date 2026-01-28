@@ -105,6 +105,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
+        # Check if user has permission to create projects in this org
+        from orgs.models import OrgPermissions
+        try:
+            org_permissions = org_membership.organization.permissions
+        except OrgPermissions.DoesNotExist:
+            org_permissions = OrgPermissions.create_for_org(org_membership.organization)
+        
+        if not org_permissions.has_permission(org_membership.role, 'create_project'):
+            return Response(
+                {'detail': 'You do not have permission to create projects in this organization'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
@@ -123,8 +136,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             role=ProjectRole.OWNER
         )
         
-        # Phase 7: Create default sections for the project
-        TaskSection.create_default_sections(project, request.user)
+        # Note: Default sections are no longer auto-created.
+        # Users can create custom sections as needed.
         
         return Response(
             ProjectDetailSerializer(project, context=self.get_serializer_context()).data,
@@ -424,8 +437,25 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        task.start_timer()
+        task.start_timer(user=request.user)
         return Response(TaskSerializer(task).data)
+    
+    @action(detail=True, methods=['post'])
+    def pause_timer(self, request, pk=None):
+        """Pause the task timer (saves current time without resetting)."""
+        task = self.get_object()
+        
+        if not ProjectRole.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        elapsed_minutes = task.pause_timer(user=request.user)
+        return Response({
+            **TaskSerializer(task).data,
+            'elapsed_minutes': elapsed_minutes
+        })
     
     @action(detail=True, methods=['post'])
     def stop_timer(self, request, pk=None):
@@ -438,7 +468,24 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        task.stop_timer()
+        elapsed_minutes = task.stop_timer(user=request.user)
+        return Response({
+            **TaskSerializer(task).data,
+            'elapsed_minutes': elapsed_minutes
+        })
+    
+    @action(detail=True, methods=['post'])
+    def reset_timer(self, request, pk=None):
+        """Reset the task timer to zero."""
+        task = self.get_object()
+        
+        if not ProjectRole.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        task.reset_timer(user=request.user)
         return Response(TaskSerializer(task).data)
     
     @action(detail=True, methods=['post'])
@@ -869,9 +916,16 @@ class FocusedTaskViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Get user's focused tasks."""
-        return FocusedTask.objects.filter(
+        queryset = FocusedTask.objects.filter(
             user=self.request.user
         ).select_related('task', 'task__project', 'task__assigned_to')
+        
+        # Filter by task_id if provided
+        task_id = self.request.query_params.get('task_id')
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        
+        return queryset
     
     def create(self, request, *args, **kwargs):
         """Focus on a task."""

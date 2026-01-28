@@ -169,11 +169,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 # JWT Configuration
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
@@ -181,7 +181,6 @@ SIMPLE_JWT = {
     'ISSUER': None,
     'JTI_CLAIM': 'jti',
     'TOKEN_TYPE_CLAIM': 'token_type',
-    'JTI_CLAIM': 'jti',
     'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',

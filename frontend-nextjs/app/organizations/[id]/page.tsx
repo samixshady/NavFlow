@@ -414,13 +414,22 @@ export default function OrganizationDetailPage() {
                   </>
                 )}
                 {isOwner && (
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
+                  <>
+                    <Link
+                      href={`/organizations/permissions?org=${orgId}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-sm hover:shadow-md"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Manage Permissions
+                    </Link>
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </>
                 )}
               </div>
             )}

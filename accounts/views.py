@@ -271,12 +271,42 @@ class NotificationViewSet(viewsets.ModelViewSet):
             invitation_id = notification.action_data.get('invitation_id')
             if invitation_id:
                 try:
-                    invitation = Invitation.objects.get(id=invitation_id, email=request.user.email)
+                    invitation = Invitation.objects.get(
+                        id=invitation_id,
+                        invited_user=request.user,
+                        status='pending'
+                    )
                     # Create membership
                     Membership.objects.create(
                         user=request.user,
                         organization=invitation.organization,
                         role=invitation.role
+                    )
+                    invitation.status = 'accepted'
+                    invitation.responded_at = timezone.now()
+                    invitation.save()
+                    
+                    # Notify the inviter
+                    Notification.objects.create(
+                        user_id=invitation.invited_by_id,
+                        type='invitation_accepted',
+                        title='Invitation Accepted',
+                        message=f'{request.user.get_display_name()} accepted your invitation to join "{invitation.organization.name}".',
+                        link='/organizations',
+                        related_org_id=invitation.organization.id,
+                        actor_id=request.user.id,
+                        actor_name=request.user.get_full_name(),
+                        actor_username=request.user.username
+                    )
+                except Invitation.DoesNotExist:
+                    return Response(
+                        {'detail': 'Invitation not found or already processed'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                except Exception as e:
+                    return Response(
+                        {'detail': str(e)},
+                        status=status.HTTP_400_BAD_REQUEST
                     )
                     invitation.status = 'accepted'
                     invitation.save()
@@ -305,6 +335,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(notification).data)
     
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def decline(self, request, pk=None):
         """Decline an actionable notification (invitation)."""
         notification = self.get_object()
@@ -320,7 +351,30 @@ class NotificationViewSet(viewsets.ModelViewSet):
         if notification.type == 'org_invite':
             invitation_id = notification.action_data.get('invitation_id')
             if invitation_id:
-                Invitation.objects.filter(id=invitation_id).update(status='declined')
+                try:
+                    invitation = Invitation.objects.get(
+                        id=invitation_id,
+                        invited_user=request.user,
+                        status='pending'
+                    )
+                    invitation.status = 'declined'
+                    invitation.responded_at = timezone.now()
+                    invitation.save()
+                    
+                    # Notify the inviter
+                    Notification.objects.create(
+                        user_id=invitation.invited_by_id,
+                        type='invitation_declined',
+                        title='Invitation Declined',
+                        message=f'{request.user.get_display_name()} declined your invitation to join "{invitation.organization.name}".',
+                        link='/organizations',
+                        related_org_id=invitation.organization.id,
+                        actor_id=request.user.id,
+                        actor_name=request.user.get_full_name(),
+                        actor_username=request.user.username
+                    )
+                except Invitation.DoesNotExist:
+                    pass
         
         notification.action_status = 'declined'
         notification.is_read = True

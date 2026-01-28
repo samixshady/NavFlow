@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 import logging
-from .models import Organization, Membership, Invitation
+from .models import Organization, Membership, Invitation, OrgPermissions
 from .serializers import (
     OrganizationSerializer, 
     OrganizationListSerializer,
@@ -13,7 +13,10 @@ from .serializers import (
     MembershipSerializer,
     InvitationSerializer,
     CreateInvitationSerializer,
-    UpdateMemberRoleSerializer
+    UpdateMemberRoleSerializer,
+    OrgPermissionsSerializer,
+    OrgPermissionsUpdateSerializer,
+    OrgMemberWithPermissionsSerializer
 )
 
 User = get_user_model()
@@ -74,6 +77,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create a new organization and add the creator as owner.
+        Auto-creates default permissions for the organization.
         """
         logger.info(f'Creating organization for user: {request.user.email}')
         logger.info(f'Request data: {request.data}')
@@ -97,6 +101,11 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                     role=Membership.OWNER
                 )
                 logger.info(f'Membership created: User={request.user.email}, Org={organization.name}, Role={membership.role}')
+                
+                # Create default permissions for this organization
+                from .models import OrgPermissions
+                OrgPermissions.create_for_org(organization)
+                logger.info(f'Default permissions created for org: {organization.name}')
                 
                 # Verify it was saved
                 org_count = Organization.objects.filter(id=organization.id).count()
@@ -350,6 +359,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         """
         Invite a user to the organization by username.
         Only owners and admins can invite.
+        Creates a notification for the invited user.
         """
         organization = self.get_object()
         
@@ -379,11 +389,52 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         if not invited_user:
             invited_user = User.objects.filter(username=identifier).first()
         
+        if not invited_user:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if user is already a member
+        if Membership.objects.filter(user=invited_user, organization=organization).exists():
+            return Response(
+                {'detail': 'User is already a member of this organization.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if invitation already exists
+        existing = Invitation.objects.filter(
+            invited_user=invited_user,
+            organization=organization,
+            status=Invitation.PENDING
+        ).first()
+        if existing:
+            return Response(
+                {'detail': 'Invitation already sent to this user.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         invitation = Invitation.objects.create(
             organization=organization,
             invited_user=invited_user,
             invited_by=request.user,
             role=serializer.validated_data['role']
+        )
+        
+        # Create notification for the invited user
+        from accounts.models import Notification
+        Notification.objects.create(
+            user=invited_user,
+            type='org_invite',
+            title=f'Organization Invitation',
+            message=f'{request.user.get_display_name()} invited you to join "{organization.name}" as {invitation.get_role_display()}.',
+            link=f'/organizations',
+            action_status='pending',
+            action_data={'invitation_id': invitation.id, 'org_id': organization.id},
+            related_org_id=organization.id,
+            actor_id=request.user.id,
+            actor_name=request.user.get_full_name(),
+            actor_username=request.user.username
         )
         
         return Response(
@@ -451,6 +502,146 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             MembershipSerializer(member_membership).data,
             status=status.HTTP_200_OK
         )
+    
+    @action(detail=True, methods=['get'])
+    def permissions(self, request, pk=None):
+        """
+        Get the permission settings for an organization.
+        Only owners can view/edit permissions.
+        """
+        organization = self.get_object()
+        
+        # Check if user is owner
+        try:
+            membership = Membership.objects.get(user=request.user, organization=organization)
+            if membership.role != Membership.OWNER:
+                return Response(
+                    {'detail': 'Only owners can view permission settings.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get or create permissions
+        try:
+            org_permissions = organization.permissions
+        except OrgPermissions.DoesNotExist:
+            org_permissions = OrgPermissions.create_for_org(organization)
+        
+        serializer = OrgPermissionsSerializer(org_permissions)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='permissions/update')
+    def update_permission(self, request, pk=None):
+        """
+        Update a single permission for a role.
+        Only owners can update permissions.
+        """
+        organization = self.get_object()
+        
+        # Check if user is owner
+        try:
+            membership = Membership.objects.get(user=request.user, organization=organization)
+            if membership.role != Membership.OWNER:
+                return Response(
+                    {'detail': 'Only owners can update permission settings.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = OrgPermissionsUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        role = serializer.validated_data['role']
+        permission = serializer.validated_data['permission']
+        value = serializer.validated_data['value']
+        
+        # Get or create permissions
+        try:
+            org_permissions = organization.permissions
+        except OrgPermissions.DoesNotExist:
+            org_permissions = OrgPermissions.create_for_org(organization)
+        
+        # Build the field name
+        prefix_map = {'admin': 'admin_', 'moderator': 'mod_', 'member': 'member_'}
+        field_name = f"{prefix_map[role]}{permission}"
+        
+        if hasattr(org_permissions, field_name):
+            setattr(org_permissions, field_name, value)
+            org_permissions.save()
+            
+            return Response({
+                'message': f'Permission {permission} for {role} updated to {value}',
+                'permissions': OrgPermissionsSerializer(org_permissions).data
+            })
+        
+        return Response(
+            {'detail': f'Invalid permission: {permission}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    @action(detail=True, methods=['get'], url_path='members-with-permissions')
+    def members_with_permissions(self, request, pk=None):
+        """
+        Get all members with their computed permissions.
+        Used for the permissions UI.
+        """
+        organization = self.get_object()
+        
+        # Check if user is at least a member
+        try:
+            membership = Membership.objects.get(user=request.user, organization=organization)
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get role filter from query params
+        role_filter = request.query_params.get('role', None)
+        
+        memberships = organization.memberships.all().select_related('user')
+        if role_filter:
+            memberships = memberships.filter(role=role_filter)
+        
+        serializer = OrgMemberWithPermissionsSerializer(memberships, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path='my-permissions')
+    def my_permissions(self, request, pk=None):
+        """
+        Get the current user's permissions in this organization.
+        """
+        organization = self.get_object()
+        
+        try:
+            membership = Membership.objects.get(user=request.user, organization=organization)
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get or create permissions
+        try:
+            org_permissions = organization.permissions
+        except OrgPermissions.DoesNotExist:
+            org_permissions = OrgPermissions.create_for_org(organization)
+        
+        permissions = org_permissions.get_permissions_for_role(membership.role)
+        
+        return Response({
+            'role': membership.role,
+            'role_display': membership.get_role_display(),
+            'permissions': permissions
+        })
 
 
 class InvitationViewSet(viewsets.ViewSet):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Organization, Membership, Invitation
+from .models import Organization, Membership, Invitation, OrgPermissions
 
 User = get_user_model()
 
@@ -25,12 +25,13 @@ class OrganizationSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating organizations."""
     owner_email = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
+    user_role = serializers.SerializerMethodField()
     members = MembershipSerializer(source='memberships', many=True, read_only=True)
     
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'description', 'owner_email', 'member_count', 'members', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'owner_email', 'member_count', 'members', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'owner_email', 'member_count', 'user_role', 'members', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'owner_email', 'member_count', 'user_role', 'members', 'created_at', 'updated_at']
     
     def get_owner_email(self, obj):
         """Get the owner's email."""
@@ -40,6 +41,17 @@ class OrganizationSerializer(serializers.ModelSerializer):
     def get_member_count(self, obj):
         """Get the number of members."""
         return obj.memberships.count()
+    
+    def get_user_role(self, obj):
+        """Get the current user's role in this organization."""
+        user = self.context.get('user')
+        if user:
+            try:
+                membership = obj.memberships.get(user=user)
+                return membership.role
+            except Membership.DoesNotExist:
+                return None
+        return None
 
 
 class OrganizationListSerializer(serializers.ModelSerializer):
@@ -229,3 +241,99 @@ class UpdateMemberRoleSerializer(serializers.Serializer):
             )
         
         return data
+
+
+class OrgPermissionsSerializer(serializers.ModelSerializer):
+    """Serializer for organization permissions."""
+    
+    class Meta:
+        model = OrgPermissions
+        exclude = ['id', 'organization', 'created_at', 'updated_at']
+    
+    def to_representation(self, instance):
+        """Return organized permission data."""
+        data = super().to_representation(instance)
+        
+        # Organize by role
+        organized = {
+            'admin': {},
+            'moderator': {},
+            'member': {}
+        }
+        
+        for key, value in data.items():
+            if key.startswith('admin_'):
+                perm_name = key[6:]  # Remove 'admin_' prefix
+                organized['admin'][perm_name] = value
+            elif key.startswith('mod_'):
+                perm_name = key[4:]  # Remove 'mod_' prefix
+                organized['moderator'][perm_name] = value
+            elif key.startswith('member_'):
+                perm_name = key[7:]  # Remove 'member_' prefix
+                organized['member'][perm_name] = value
+        
+        # Owner always has all permissions
+        organized['owner'] = {
+            'create_project': True,
+            'delete_project': True,
+            'create_task': True,
+            'delete_task': True,
+            'assign_task': True,
+            'view_all_tasks': True,
+            'view_unassigned_tasks': True,
+            'create_label': True,
+            'delete_label': True,
+            'manage_timer': True,
+            'invite_members': True,
+            'remove_members': True,
+            'change_member_roles': True,
+        }
+        
+        return organized
+
+
+class OrgPermissionsUpdateSerializer(serializers.Serializer):
+    """Serializer for updating organization permissions."""
+    role = serializers.ChoiceField(choices=['admin', 'moderator', 'member'])
+    permission = serializers.CharField()
+    value = serializers.BooleanField()
+    
+    def validate_permission(self, value):
+        """Validate that the permission is valid."""
+        valid_permissions = [
+            'create_project', 'delete_project', 'create_task', 'delete_task',
+            'assign_task', 'view_all_tasks', 'view_unassigned_tasks',
+            'create_label', 'delete_label', 'manage_timer',
+            'invite_members', 'remove_members', 'change_member_roles'
+        ]
+        if value not in valid_permissions:
+            raise serializers.ValidationError(f"Invalid permission: {value}")
+        return value
+
+
+class OrgMemberWithPermissionsSerializer(serializers.ModelSerializer):
+    """Serializer for members with their computed permissions."""
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_name = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+    permissions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Membership
+        fields = ['id', 'user_email', 'user_name', 'username', 'role', 'role_display', 'joined_at', 'permissions']
+        read_only_fields = fields
+    
+    def get_user_name(self, obj):
+        """Get user's full name."""
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
+    
+    def get_permissions(self, obj):
+        """Get computed permissions for this member."""
+        try:
+            org_permissions = obj.organization.permissions
+            return org_permissions.get_permissions_for_role(obj.role)
+        except OrgPermissions.DoesNotExist:
+            # If no permissions exist, create defaults
+            org_permissions = OrgPermissions.create_for_org(obj.organization)
+            return org_permissions.get_permissions_for_role(obj.role)

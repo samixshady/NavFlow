@@ -181,3 +181,128 @@ class Invitation(models.Model):
         self.responded_at = timezone.now()
         self.save()
         return True
+
+
+class OrgPermissions(models.Model):
+    """
+    Permission presets for each role in an organization.
+    Each organization can customize what each role can do.
+    """
+    organization = models.OneToOneField(
+        Organization, 
+        on_delete=models.CASCADE, 
+        related_name='permissions'
+    )
+    
+    # Admin permissions
+    admin_create_project = models.BooleanField(default=True)
+    admin_delete_project = models.BooleanField(default=True)
+    admin_create_task = models.BooleanField(default=True)
+    admin_delete_task = models.BooleanField(default=True)
+    admin_assign_task = models.BooleanField(default=True)
+    admin_view_all_tasks = models.BooleanField(default=True)
+    admin_view_unassigned_tasks = models.BooleanField(default=True)
+    admin_create_label = models.BooleanField(default=True)
+    admin_delete_label = models.BooleanField(default=True)
+    admin_manage_timer = models.BooleanField(default=True)
+    admin_invite_members = models.BooleanField(default=True)
+    admin_remove_members = models.BooleanField(default=False)
+    admin_change_member_roles = models.BooleanField(default=False)
+    
+    # Moderator permissions
+    mod_create_project = models.BooleanField(default=True)
+    mod_delete_project = models.BooleanField(default=False)
+    mod_create_task = models.BooleanField(default=True)
+    mod_delete_task = models.BooleanField(default=True)
+    mod_assign_task = models.BooleanField(default=True)
+    mod_view_all_tasks = models.BooleanField(default=True)
+    mod_view_unassigned_tasks = models.BooleanField(default=True)
+    mod_create_label = models.BooleanField(default=True)
+    mod_delete_label = models.BooleanField(default=False)
+    mod_manage_timer = models.BooleanField(default=True)
+    mod_invite_members = models.BooleanField(default=False)
+    mod_remove_members = models.BooleanField(default=False)
+    mod_change_member_roles = models.BooleanField(default=False)
+    
+    # Member permissions
+    member_create_project = models.BooleanField(default=False)
+    member_delete_project = models.BooleanField(default=False)
+    member_create_task = models.BooleanField(default=True)
+    member_delete_task = models.BooleanField(default=False)
+    member_assign_task = models.BooleanField(default=False)
+    member_view_all_tasks = models.BooleanField(default=True)
+    member_view_unassigned_tasks = models.BooleanField(default=False)
+    member_create_label = models.BooleanField(default=False)
+    member_delete_label = models.BooleanField(default=False)
+    member_manage_timer = models.BooleanField(default=True)
+    member_invite_members = models.BooleanField(default=False)
+    member_remove_members = models.BooleanField(default=False)
+    member_change_member_roles = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Organization Permissions'
+        verbose_name_plural = 'Organization Permissions'
+    
+    def __str__(self):
+        return f"Permissions for {self.organization.name}"
+    
+    def get_permissions_for_role(self, role):
+        """Get all permissions for a specific role."""
+        prefix_map = {
+            'owner': None,  # Owners have all permissions
+            'admin': 'admin_',
+            'moderator': 'mod_',
+            'member': 'member_'
+        }
+        
+        if role == 'owner':
+            # Owners always have all permissions
+            return {
+                'create_project': True,
+                'delete_project': True,
+                'create_task': True,
+                'delete_task': True,
+                'assign_task': True,
+                'view_all_tasks': True,
+                'view_unassigned_tasks': True,
+                'create_label': True,
+                'delete_label': True,
+                'manage_timer': True,
+                'invite_members': True,
+                'remove_members': True,
+                'change_member_roles': True,
+            }
+        
+        prefix = prefix_map.get(role, 'member_')
+        permissions = {}
+        
+        for field in self._meta.fields:
+            if field.name.startswith(prefix):
+                perm_name = field.name[len(prefix):]
+                permissions[perm_name] = getattr(self, field.name)
+        
+        return permissions
+    
+    def has_permission(self, role, permission):
+        """Check if a role has a specific permission."""
+        if role == 'owner':
+            return True
+        
+        prefix_map = {
+            'admin': 'admin_',
+            'moderator': 'mod_',
+            'member': 'member_'
+        }
+        
+        prefix = prefix_map.get(role, 'member_')
+        field_name = f"{prefix}{permission}"
+        
+        return getattr(self, field_name, False)
+    
+    @classmethod
+    def create_for_org(cls, organization):
+        """Create default permissions for an organization."""
+        return cls.objects.create(organization=organization)

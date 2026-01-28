@@ -258,7 +258,7 @@ class Task(models.Model):
         self.deleted_at = timezone.now()
         self.save()
     
-    def start_timer(self):
+    def start_timer(self, user=None):
         """Phase 6: Start the task timer."""
         if not self.is_timer_running:
             self.is_timer_running = True
@@ -266,15 +266,100 @@ class Task(models.Model):
             if not self.started_at:
                 self.started_at = timezone.now()
             self.save()
+            
+            # Log the action
+            if user:
+                AuditLog.objects.create(
+                    project=self.project,
+                    user=user,
+                    action='timer_started',
+                    target_type='task',
+                    target_id=self.id,
+                    target_name=self.title,
+                    details={'task_id': self.id, 'task_title': self.title}
+                )
     
-    def stop_timer(self):
-        """Phase 6: Stop the task timer and add elapsed time."""
+    def pause_timer(self, user=None):
+        """Pause the task timer and log elapsed time without stopping."""
         if self.is_timer_running and self.timer_started_at:
             elapsed = timezone.now() - self.timer_started_at
-            self.time_spent_minutes += int(elapsed.total_seconds() / 60)
+            elapsed_minutes = int(elapsed.total_seconds() / 60)
+            self.time_spent_minutes += elapsed_minutes
             self.is_timer_running = False
             self.timer_started_at = None
             self.save()
+            
+            # Log the action
+            if user:
+                AuditLog.objects.create(
+                    project=self.project,
+                    user=user,
+                    action='timer_paused',
+                    target_type='task',
+                    target_id=self.id,
+                    target_name=self.title,
+                    details={
+                        'task_id': self.id, 
+                        'task_title': self.title,
+                        'elapsed_minutes': elapsed_minutes,
+                        'total_minutes': self.time_spent_minutes
+                    }
+                )
+            return elapsed_minutes
+        return 0
+    
+    def stop_timer(self, user=None):
+        """Phase 6: Stop the task timer and add elapsed time."""
+        if self.is_timer_running and self.timer_started_at:
+            elapsed = timezone.now() - self.timer_started_at
+            elapsed_minutes = int(elapsed.total_seconds() / 60)
+            self.time_spent_minutes += elapsed_minutes
+            self.is_timer_running = False
+            self.timer_started_at = None
+            self.save()
+            
+            # Log the action
+            if user:
+                AuditLog.objects.create(
+                    project=self.project,
+                    user=user,
+                    action='timer_stopped',
+                    target_type='task',
+                    target_id=self.id,
+                    target_name=self.title,
+                    details={
+                        'task_id': self.id, 
+                        'task_title': self.title,
+                        'elapsed_minutes': elapsed_minutes,
+                        'total_minutes': self.time_spent_minutes
+                    }
+                )
+            return elapsed_minutes
+        return 0
+    
+    def reset_timer(self, user=None):
+        """Reset the task timer to zero."""
+        old_time = self.time_spent_minutes
+        self.time_spent_minutes = 0
+        self.is_timer_running = False
+        self.timer_started_at = None
+        self.save()
+        
+        # Log the action
+        if user:
+            AuditLog.objects.create(
+                project=self.project,
+                user=user,
+                action='timer_reset',
+                target_type='task',
+                target_id=self.id,
+                target_name=self.title,
+                details={
+                    'task_id': self.id, 
+                    'task_title': self.title,
+                    'previous_minutes': old_time
+                }
+            )
     
     def get_time_spent_display(self):
         """Phase 6: Get formatted time spent string."""
@@ -383,24 +468,49 @@ class AuditLog(models.Model):
     """
     Phase 5: Audit log for tracking changes across the system.
     Records who did what, when, and in which organization.
+    Enhanced: Added timer tracking and project-level logs.
     """
     ACTION_CREATE = 'create'
     ACTION_UPDATE = 'update'
     ACTION_DELETE = 'delete'
+    ACTION_TIMER_STARTED = 'timer_started'
+    ACTION_TIMER_PAUSED = 'timer_paused'
+    ACTION_TIMER_STOPPED = 'timer_stopped'
+    ACTION_TIMER_RESET = 'timer_reset'
+    ACTION_ASSIGNED = 'assigned'
+    ACTION_UNASSIGNED = 'unassigned'
+    ACTION_STATUS_CHANGED = 'status_changed'
+    ACTION_COMMENT_ADDED = 'comment_added'
     
     ACTION_CHOICES = [
         (ACTION_CREATE, 'Created'),
         (ACTION_UPDATE, 'Updated'),
         (ACTION_DELETE, 'Deleted'),
+        (ACTION_TIMER_STARTED, 'Timer Started'),
+        (ACTION_TIMER_PAUSED, 'Timer Paused'),
+        (ACTION_TIMER_STOPPED, 'Timer Stopped'),
+        (ACTION_TIMER_RESET, 'Timer Reset'),
+        (ACTION_ASSIGNED, 'Assigned'),
+        (ACTION_UNASSIGNED, 'Unassigned'),
+        (ACTION_STATUS_CHANGED, 'Status Changed'),
+        (ACTION_COMMENT_ADDED, 'Comment Added'),
     ]
     
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='audit_logs')
+    # Can be linked to organization or project directly
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='audit_logs', null=True, blank=True)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='audit_logs', null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
-    content_type = models.CharField(max_length=50)  # 'project', 'task', 'projectrole'
-    object_id = models.IntegerField()
-    object_name = models.CharField(max_length=255)  # Name for display
-    changes = models.JSONField(default=dict, blank=True)  # What changed {field: [old, new]}
+    action = models.CharField(max_length=30)
+    # Legacy fields (still support old format)
+    content_type = models.CharField(max_length=50, blank=True, null=True)  # 'project', 'task', 'projectrole'
+    object_id = models.IntegerField(null=True, blank=True)
+    object_name = models.CharField(max_length=255, blank=True, null=True)
+    changes = models.JSONField(default=dict, blank=True)
+    # New fields for enhanced logging
+    target_type = models.CharField(max_length=50, blank=True, null=True)  # 'task', 'project', etc.
+    target_id = models.IntegerField(null=True, blank=True)
+    target_name = models.CharField(max_length=255, blank=True, null=True)
+    details = models.JSONField(default=dict, blank=True)  # Additional details
     timestamp = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     
@@ -408,8 +518,11 @@ class AuditLog(models.Model):
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['organization', 'timestamp']),
+            models.Index(fields=['project', 'timestamp']),
             models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['action', 'timestamp']),
         ]
     
     def __str__(self):
-        return f"{self.user.email} {self.action} {self.content_type} at {self.timestamp}"
+        user_str = self.user.email if self.user else 'Unknown'
+        return f"{user_str} {self.action} at {self.timestamp}"

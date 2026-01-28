@@ -146,6 +146,8 @@ class TaskSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
+    organization_id = serializers.IntegerField(source='project.organization.id', read_only=True)
+    organization_name = serializers.CharField(source='project.organization.name', read_only=True)
     time_spent_display = serializers.CharField(source='get_time_spent_display', read_only=True)
     section_name = serializers.CharField(source='section.name', read_only=True, allow_null=True)
     section_color = serializers.CharField(source='section.color', read_only=True, allow_null=True)
@@ -158,7 +160,8 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'title', 'description', 'rich_description', 'project', 'project_name', 
+            'id', 'title', 'description', 'rich_description', 'project', 'project_name',
+            'organization_id', 'organization_name',
             'status', 'status_display', 'section', 'section_name', 'section_color',
             'priority', 'priority_display', 
             'assigned_to', 'assigned_to_email', 'assigned_to_username', 'assigned_to_name',
@@ -261,6 +264,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
 class ProjectListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing projects."""
+    organization_id = serializers.IntegerField(source='organization.id', read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     owner_email = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
@@ -270,7 +274,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'description', 'organization_name', 'status',
+            'id', 'name', 'description', 'organization_id', 'organization_name', 'status',
             'owner_email', 'member_count', 'task_count', 'user_role', 'created_at'
         ]
         read_only_fields = fields

@@ -58,8 +58,11 @@ interface Task {
   description: string;
   project: number;
   project_name: string;
+  organization_id?: number;
+  organization_name?: string;
   assigned_to: number | null;
   assigned_to_email: string | null;
+  assigned_to_username?: string | null;
   status: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date: string | null;
@@ -84,6 +87,7 @@ interface Task {
 interface Project {
   id: number;
   name: string;
+  organization_id: number;
   organization_name: string;
   user_role?: string;
   sections?: TaskSection[];
@@ -114,7 +118,7 @@ const SECTION_ICONS = [
   { name: 'users', icon: Users, label: 'Users' },
 ];
 
-type SortField = 'created_at' | 'due_date' | 'priority' | 'title' | 'time_spent';
+type SortField = 'created_at' | 'due_date' | 'priority' | 'title' | 'time_spent' | 'organization';
 type SortOrder = 'asc' | 'desc';
 
 export default function TasksPage() {
@@ -125,6 +129,7 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [filterProject, setFilterProject] = useState<string>('all');
+  const [filterOrganization, setFilterOrganization] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterDueDate, setFilterDueDate] = useState<string>('all');
   const [activeSection, setActiveSection] = useState<number | null>(null);
@@ -498,14 +503,27 @@ export default function TasksPage() {
     }
   };
 
+  const handlePauseTimer = async (task: Task, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    try {
+      const response = await api.post(`/tasks/${task.id}/pause_timer/`);
+      setTasks(tasks.map(t => t.id === task.id ? response.data : t));
+      if (selectedTask?.id === task.id) {
+        setSelectedTask(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to pause timer:', err);
+    }
+  };
+
   const handleResetTimer = async (task: Task, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!confirm('Are you sure you want to reset the timer? All tracked time will be lost.')) return;
     try {
-      await api.patch(`/tasks/${task.id}/`, { time_spent_minutes: 0 });
-      fetchTasks();
+      const response = await api.post(`/tasks/${task.id}/reset_timer/`);
+      setTasks(tasks.map(t => t.id === task.id ? response.data : t));
       if (selectedTask?.id === task.id) {
-        setSelectedTask({ ...task, time_spent_minutes: 0, is_timer_running: false });
+        setSelectedTask(response.data);
       }
     } catch (err) {
       console.error('Failed to reset timer:', err);
@@ -522,11 +540,15 @@ export default function TasksPage() {
         setSelectedTask({ ...task, is_focused: true, focused_id: response.data.id });
       }
       setSuccess('Task added to Focus Mode');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       console.error('Failed to focus task:', err);
       if (err.response?.status === 400) {
         setError('Task is already in Focus Mode');
+      } else {
+        setError(err.response?.data?.detail || 'Failed to add task to Focus Mode');
       }
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -544,9 +566,15 @@ export default function TasksPage() {
             setSelectedTask({ ...task, is_focused: false, focused_id: undefined });
           }
           setSuccess('Task removed from Focus Mode');
+          setTimeout(() => setSuccess(''), 3000);
+        } else {
+          setError('Task is not in Focus Mode');
+          setTimeout(() => setError(''), 3000);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to unfocus task:', err);
+        setError(err.response?.data?.detail || 'Failed to remove from Focus Mode');
+        setTimeout(() => setError(''), 3000);
       }
     } else {
       try {
@@ -556,8 +584,11 @@ export default function TasksPage() {
           setSelectedTask({ ...task, is_focused: false, focused_id: undefined });
         }
         setSuccess('Task removed from Focus Mode');
-      } catch (err) {
+        setTimeout(() => setSuccess(''), 3000);
+      } catch (err: any) {
         console.error('Failed to unfocus task:', err);
+        setError(err.response?.data?.detail || 'Failed to remove from Focus Mode');
+        setTimeout(() => setError(''), 3000);
       }
     }
   };
@@ -643,6 +674,11 @@ export default function TasksPage() {
         case 'time_spent':
           comparison = (a.time_spent_minutes || 0) - (b.time_spent_minutes || 0);
           break;
+        case 'organization':
+          const orgA = a.organization_name || '';
+          const orgB = b.organization_name || '';
+          comparison = orgA.localeCompare(orgB);
+          break;
         case 'created_at':
         default:
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -660,6 +696,7 @@ export default function TasksPage() {
       task.project_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesProject = filterProject === 'all' || task.project.toString() === filterProject;
+    const matchesOrganization = filterOrganization === 'all' || task.organization_id?.toString() === filterOrganization;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     
     // Section filter
@@ -701,7 +738,7 @@ export default function TasksPage() {
       }
     }
     
-    return matchesSearch && matchesProject && matchesPriority && matchesSection && matchesDueDate;
+    return matchesSearch && matchesProject && matchesOrganization && matchesPriority && matchesSection && matchesDueDate;
   }));
 
   const getTasksForSection = (sectionId: number) => {
@@ -801,10 +838,20 @@ export default function TasksPage() {
     return project?.user_role === 'owner' || project?.user_role === 'admin';
   };
 
+  // Get unique organizations from projects
+  const uniqueOrganizations = Array.from(
+    new Map(
+      projects
+        .filter(p => p.organization_id)
+        .map(p => [p.organization_id, { id: p.organization_id, name: p.organization_name || 'Unknown Organization' }])
+    ).values()
+  );
+
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm('');
     setFilterProject('all');
+    setFilterOrganization('all');
     setFilterPriority('all');
     setFilterDueDate('all');
     setActiveSection(null);
@@ -813,7 +860,7 @@ export default function TasksPage() {
     setSortOrder('desc');
   };
 
-  const hasActiveFilters = searchTerm || filterProject !== 'all' || filterPriority !== 'all' || filterDueDate !== 'all';
+  const hasActiveFilters = searchTerm || filterProject !== 'all' || filterOrganization !== 'all' || filterPriority !== 'all' || filterDueDate !== 'all';
   
   if (isLoading) {
     return (
@@ -896,6 +943,7 @@ export default function TasksPage() {
               <option value="priority">Priority</option>
               <option value="title">Title</option>
               <option value="time_spent">Time Spent</option>
+              <option value="organization">Organization</option>
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
@@ -925,6 +973,24 @@ export default function TasksPage() {
         {isFilterOpen && (
           <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl animate-in slide-in-from-top-2 duration-200">
             <select
+              value={filterOrganization}
+              onChange={(e) => {
+                setFilterOrganization(e.target.value);
+                setFilterProject('all');
+                setActiveSection(null);
+                setShowAllTasks(true);
+              }}
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">All Organizations</option>
+              {uniqueOrganizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+
+            <select
               value={filterProject}
               onChange={(e) => {
                 setFilterProject(e.target.value);
@@ -934,7 +1000,9 @@ export default function TasksPage() {
               className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Projects</option>
-              {projects.map((project) => (
+              {projects
+                .filter(p => filterOrganization === 'all' || p.organization_id?.toString() === filterOrganization)
+                .map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>
@@ -970,7 +1038,7 @@ export default function TasksPage() {
       </div>
 
       {/* Section Tabs - Browser-like */}
-      {filterProject !== 'all' && sections.length > 0 && (
+      {(filterProject !== 'all' && sections.length > 0) ? (
         <div className="mb-6 relative">
           <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-t-2xl p-1.5 relative">
             {/* Left Scroll Button */}
@@ -1104,6 +1172,31 @@ export default function TasksPage() {
                 <ChevronRight className="w-5 h-5 text-gray-500" />
               </button>
             )}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Tag className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Section Tabs
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Select a project to view and manage its sections
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsSectionModalOpen(true)}
+              className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Section
+            </button>
           </div>
         </div>
       )}
@@ -1245,13 +1338,22 @@ export default function TasksPage() {
                   {/* Timer Controls */}
                   <div className="flex items-center gap-1">
                     {task.is_timer_running ? (
-                      <button
-                        onClick={(e) => handleStopTimer(task, e)}
-                        className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
-                        title="Stop Timer"
-                      >
-                        <Pause className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={(e) => handlePauseTimer(task, e)}
+                          className="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
+                          title="Pause Timer"
+                        >
+                          <Pause className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleStopTimer(task, e)}
+                          className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
+                          title="Stop Timer"
+                        >
+                          <Square className="w-4 h-4" />
+                        </button>
+                      </>
                     ) : (
                       <button
                         onClick={(e) => handleStartTimer(task, e)}
@@ -1475,14 +1577,23 @@ export default function TasksPage() {
 
       {/* Task Detail Modal */}
       {isDetailModalOpen && selectedTask && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl my-8 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl mb-8 animate-in zoom-in-95 duration-200 max-h-[calc(100vh-6rem)] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Task Details</h2>
               <div className="flex items-center gap-2">
                 {/* Focus Button */}
                 <button
-                  onClick={(e) => selectedTask.is_focused ? handleUnfocusTask(selectedTask, e) : handleFocusTask(selectedTask, e)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedTask.is_focused) {
+                      handleUnfocusTask(selectedTask, e);
+                    } else {
+                      handleFocusTask(selectedTask, e);
+                    }
+                  }}
                   className={`p-2 rounded-xl transition-colors ${
                     selectedTask.is_focused 
                       ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50' 
@@ -1539,14 +1650,26 @@ export default function TasksPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedTask.is_timer_running ? (
-                    <button
-                      type="button"
-                      onClick={(e) => handleStopTimer(selectedTask, e)}
-                      className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
-                    >
-                      <Pause className="w-5 h-5" />
-                      Stop
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => handlePauseTimer(selectedTask, e)}
+                        className="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                        title="Pause timer (saves time)"
+                      >
+                        <Pause className="w-5 h-5" />
+                        Pause
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleStopTimer(selectedTask, e)}
+                        className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                        title="Stop timer"
+                      >
+                        <Square className="w-5 h-5" />
+                        Stop
+                      </button>
+                    </>
                   ) : (
                     <button
                       type="button"
@@ -1686,6 +1809,12 @@ export default function TasksPage() {
               {/* Task Metadata */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-2 gap-4 text-sm">
+                  {selectedTask.organization_name && (
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Organization:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white font-medium">{selectedTask.organization_name}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">Project:</span>
                     <span className="ml-2 text-gray-900 dark:text-white">{selectedTask.project_name}</span>
@@ -1765,6 +1894,27 @@ export default function TasksPage() {
             )}
 
             <form onSubmit={editingSection ? handleUpdateSection : handleCreateSection} className="space-y-4">
+              {!editingSection && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Project *
+                  </label>
+                  <select
+                    value={sectionProjectId}
+                    onChange={(e) => setSectionProjectId(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name} {project.organization_name && `(${project.organization_name})`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Section Name *
@@ -1884,7 +2034,7 @@ export default function TasksPage() {
 
       {/* Success Toast */}
       {success && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-2 z-50">
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-2 z-[100]">
           <Check className="w-5 h-5" />
           {success}
           <button onClick={() => setSuccess('')} className="ml-2 hover:opacity-80">
