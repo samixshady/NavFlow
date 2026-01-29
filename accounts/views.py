@@ -381,18 +381,3 @@ class NotificationViewSet(viewsets.ModelViewSet):
         notification.save()
         
         return Response(self.get_serializer(notification).data)
-
-
-# Health check endpoint for deployment monitoring
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def health_check(request):
-    """
-    Health check endpoint for monitoring service availability.
-    Returns 200 OK if the service is running.
-    """
-    return Response({
-        'status': 'healthy',
-        'service': 'navflow-api',
-        'timestamp': timezone.now().isoformat()
-    })

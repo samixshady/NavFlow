@@ -10,7 +10,6 @@ from .views import (
     UserProfileView,
     NotificationViewSet,
     AccountDeleteView,
-    health_check,
 )
 
 app_name = 'accounts'
@@ -20,9 +19,6 @@ router = DefaultRouter()
 router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
-    # Health check endpoint for deployment monitoring
-    path('health/', health_check, name='health_check'),
-    
     # Authentication endpoints
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
