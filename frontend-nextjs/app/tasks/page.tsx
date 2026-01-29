@@ -39,6 +39,7 @@ import {
   Paperclip,
   Loader2,
   Send,
+  Folder,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import api from '@/lib/api';
