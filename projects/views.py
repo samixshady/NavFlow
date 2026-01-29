@@ -474,7 +474,27 @@ class TaskViewSet(viewsets.ModelViewSet):
             update_data = {}
             for field in ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'section']:
                 if field in request.data:
-                    update_data[field] = request.data[field]
+                    # Convert assigned_to ID to User instance if needed
+                    if field == 'assigned_to' and request.data[field] is not None:
+                        from accounts.models import CustomUser
+                        try:
+                            update_data[field] = CustomUser.objects.get(id=request.data[field])
+                        except CustomUser.DoesNotExist:
+                            return Response(
+                                {'detail': 'Assigned user not found'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                    # Convert section ID to TaskSection instance if needed
+                    elif field == 'section' and request.data[field] is not None:
+                        try:
+                            update_data[field] = TaskSection.objects.get(id=request.data[field])
+                        except TaskSection.DoesNotExist:
+                            return Response(
+                                {'detail': 'Section not found'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                    else:
+                        update_data[field] = request.data[field]
             
             if update_data:
                 TaskService.update_task(request.user, task, **update_data)

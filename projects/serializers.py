@@ -71,7 +71,7 @@ class TaskCommentSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'is_edited', 'time_ago'
         ]
         read_only_fields = [
-            'id', 'author_username', 'author_name', 'author_deleted', 'author_avatar',
+            'id', 'author', 'author_username', 'author_name', 'author_deleted', 'author_avatar',
             'author_initials', 'mentions', 'created_at', 'updated_at', 'time_ago'
         ]
     

@@ -495,11 +495,17 @@ export default function TasksPage() {
     // Fetch project members for assignee dropdown
     try {
       const response = await api.get(`/projects/${task.project}/members/`);
-      setProjectMembers(response.data.map((m: any) => ({
-        id: m.user_id,
-        email: m.user_email,
-        name: m.user_name || m.user_email
-      })));
+      console.log('Raw project members:', response.data);
+      const members = response.data
+        .map((m: any) => ({
+          id: m.user_id || m.user?.id || m.id,
+          email: m.user_email || m.user?.email || m.email,
+          name: m.user_name || m.user?.username || m.user?.email || m.email
+        }))
+        .filter((m: any) => m.id !== undefined && m.id !== null); // Filter out invalid members
+      
+      console.log('Processed project members:', members);
+      setProjectMembers(members);
     } catch (err) {
       console.error('Error fetching project members:', err);
       setProjectMembers([]);
@@ -521,7 +527,7 @@ export default function TasksPage() {
   const fetchTaskComments = async (taskId: number) => {
     setLoadingComments(true);
     try {
-      const response = await api.get(`/projects/comments/?task_id=${taskId}`);
+      const response = await api.get(`/comments/?task_id=${taskId}`);
       setTaskComments(response.data.results || response.data || []);
     } catch (err: any) {
       // Silently handle missing comments endpoint - it's not critical
@@ -538,7 +544,7 @@ export default function TasksPage() {
     if (!selectedTask || !newComment.trim()) return;
     setSubmittingComment(true);
     try {
-      const response = await api.post('/projects/comments/', {
+      const response = await api.post('/comments/', {
         task: selectedTask.id,
         content: newComment
       });
@@ -1886,9 +1892,22 @@ export default function TasksPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</p>
-                  <p className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedTask.assigned_to_username || selectedTask.assigned_to_email || 'Unassigned'}
-                  </p>
+                  {selectedTask.assigned_to ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {selectedTask.assigned_to_email?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <p className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                          {selectedTask.assigned_to_username || selectedTask.assigned_to_email}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-base md:text-lg font-semibold text-gray-500 dark:text-gray-400 italic">
+                      Not assigned
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -2158,9 +2177,20 @@ export default function TasksPage() {
                         Currently Assigned
                       </p>
                       <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm text-gray-900 dark:text-white font-medium">
-                          {selectedTask.assigned_to_username || selectedTask.assigned_to_email || 'Unassigned'}
-                        </p>
+                        {selectedTask.assigned_to ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                              {selectedTask.assigned_to_email?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-900 dark:text-white font-medium">
+                                {selectedTask.assigned_to_username || selectedTask.assigned_to_email}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 italic">Not assigned</p>
+                        )}
                       </div>
                     </div>
 
@@ -2169,28 +2199,31 @@ export default function TasksPage() {
                       {/* Unassign Option */}
                       <button
                         type="button"
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           try {
-                            setTaskAssignee(null);
-                            await api.patch(`/tasks/${selectedTask.id}/`, {
+                            const response = await api.patch(`/tasks/${selectedTask.id}/`, {
                               assigned_to: null
                             });
-                            setShowAssignModal(false);
-                            setAssigneeSearch('');
-                            fetchTasks();
-                            const response = await api.get(`/tasks/${selectedTask.id}/`);
-                            setSelectedTask(response.data);
+                            
+                            // Update local state
+                            setSelectedTask({...selectedTask, assigned_to: null, assigned_to_email: null, assigned_to_username: null});
+                            setTaskAssignee(null);
+                            await fetchTasks();
+                            
                             setSuccess('Task unassigned successfully!');
                             setTimeout(() => setSuccess(''), 3000);
-                          } catch (err) {
-                            setError('Failed to unassign task');
+                          } catch (err: any) {
+                            console.error('Unassign error:', err);
+                            setError(err.response?.data?.detail || 'Failed to unassign task');
                             setTimeout(() => setError(''), 3000);
                           }
                         }}
-                        className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
-                          taskAssignee === null
-                            ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500'
-                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        className={`w-full text-left p-2.5 rounded-lg transition-all text-sm border-2 ${
+                          !selectedTask.assigned_to
+                            ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-500'
+                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'
                         }`}
                       >
                         <p className="font-medium text-gray-900 dark:text-white">Unassigned</p>
@@ -2204,53 +2237,92 @@ export default function TasksPage() {
                           member.name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
                           member.email.toLowerCase().includes(assigneeSearch.toLowerCase())
                         )
+                        .filter(member => member.id !== undefined && member.id !== null) // Filter invalid members
                         .map((member) => (
                           <button
-                            key={member.email}
+                            key={`member-${member.id}`}
                             type="button"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              if (!member.id) {
+                                console.error('Invalid member - missing ID:', member);
+                                setError('Invalid member selected');
+                                setTimeout(() => setError(''), 3000);
+                                return;
+                              }
+                              
                               try {
-                                setTaskAssignee(member.id);
-                                await api.patch(`/tasks/${selectedTask.id}/`, {
+                                console.log('Assigning task to:', member);
+                                
+                                // Update the task
+                                const response = await api.patch(`/tasks/${selectedTask.id}/`, {
                                   assigned_to: member.id
                                 });
                                 
-                                // Send notification
+                                console.log('Task updated:', response.data);
+                                
+                                // Send notification only if this is a new assignment or reassignment
                                 if (member.id !== selectedTask.assigned_to) {
                                   try {
-                                    await api.post('/notifications/', {
-                                      user: member.id,
+                                    const notificationPayload = {
+                                      user: member.id, // The user who will receive the notification
                                       type: 'task_assigned',
-                                      title: 'Task Assigned',
-                                      message: `You have been assigned to task: ${selectedTask.title}`,
+                                      title: 'New Task Assigned',
+                                      message: `You have been assigned to: ${selectedTask.title}`,
                                       link: `/tasks?task=${selectedTask.id}`,
-                                      related_task_id: selectedTask.id
-                                    });
-                                  } catch (notifErr) {
-                                    console.error('Failed to send notification:', notifErr);
+                                      related_task_id: selectedTask.id,
+                                      related_project_id: selectedTask.project
+                                    };
+                                    
+                                    console.log('Sending notification with payload:', notificationPayload);
+                                    const notifResponse = await api.post('/accounts/notifications/', notificationPayload);
+                                    console.log('Notification sent successfully:', notifResponse.data);
+                                  } catch (notifErr: any) {
+                                    console.error('Failed to send notification:', notifErr.response?.data || notifErr.message);
+                                    // Don't fail the assignment if notification fails
                                   }
                                 }
                                 
-                                setShowAssignModal(false);
-                                setAssigneeSearch('');
-                                fetchTasks();
-                                const response = await api.get(`/tasks/${selectedTask.id}/`);
-                                setSelectedTask(response.data);
-                                setSuccess(`Task assigned to ${member.name} successfully!`);
+                                // Update local state
+                                setSelectedTask({
+                                  ...selectedTask, 
+                                  assigned_to: member.id, 
+                                  assigned_to_email: member.email,
+                                  assigned_to_username: member.name
+                                });
+                                setTaskAssignee(member.id);
+                                
+                                // Refresh tasks list
+                                await fetchTasks();
+                                
+                                setSuccess(`Task assigned to ${member.name}!`);
                                 setTimeout(() => setSuccess(''), 3000);
-                              } catch (err) {
-                                setError('Failed to assign task');
+                              } catch (err: any) {
+                                console.error('Assignment error:', err.response?.data || err);
+                                setError(err.response?.data?.detail || 'Failed to assign task');
                                 setTimeout(() => setError(''), 3000);
                               }
                             }}
-                            className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
-                              taskAssignee === member.id
-                                ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500'
-                                : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                            className={`w-full text-left p-2.5 rounded-lg transition-all text-sm border-2 ${
+                              selectedTask.assigned_to === member.id
+                                ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-500'
+                                : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'
                             }`}
                           >
-                            <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{member.email}</p>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                {member.email.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 dark:text-white truncate">{member.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.email}</p>
+                              </div>
+                              {selectedTask.assigned_to === member.id && (
+                                <Check className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                              )}
+                            </div>
                           </button>
                         ))}
                       
