@@ -4,7 +4,29 @@ Complete guide to deploy NavFlow to production with Render (Backend) and Vercel 
 
 ---
 
-## 📋 Prerequisites
+## � QUICK FIX: "Could not read package.json" Error
+
+**If you're getting this error on Vercel:**
+```
+npm error path /vercel/path0/package.json
+npm error enoent Could not read package.json
+```
+
+**Fix it NOW:**
+1. Go to: https://vercel.com/dashboard
+2. Click your project → **Settings** → **General**
+3. Scroll to **"Root Directory"**
+4. Click **"Edit"**
+5. Type: `frontend-nextjs`
+6. Click **"Save"**
+7. Go to **Deployments** tab
+8. Click the **"..."** menu on latest deployment → **"Redeploy"**
+
+✅ This tells Vercel your Next.js app is in a subdirectory, not the repo root.
+
+---
+
+## �📋 Prerequisites
 
 Before starting deployment, ensure you have:
 
@@ -142,19 +164,30 @@ Before deploying, you need your backend URL from Part 1.
 
 3. **Configure Project**
    
-   **IMPORTANT: Set Root Directory to `frontend-nextjs`**
+   **⚠️ STEP-BY-STEP - DO NOT SKIP:**
    
-   ```
-   Framework Preset: Next.js
-   Root Directory: frontend-nextjs  ⚠️ REQUIRED - This is where package.json is located
-   Build Command: (leave default or use: npm run build)
-   Output Directory: (leave default)
-   Install Command: (leave default or use: npm install)
-   Development Command: (leave default or use: npm run dev)
-   ```
+   a. **Framework Preset:** Should auto-detect as "Next.js" ✅
    
-   **Why this matters:** Your Next.js app is in the `frontend-nextjs` subdirectory, not the root.
-   Vercel needs to know where to find package.json.
+   b. **Root Directory:** Click **"Edit"** and enter: `frontend-nextjs`
+      - This is THE most critical setting
+      - Your package.json is in frontend-nextjs/ folder, not repo root
+      - Without this, build will fail with "Could not read package.json"
+      
+   c. **Build Settings:** Leave as default (Vercel auto-configures for Next.js)
+      ```
+      Build Command: (auto: npm run build)
+      Output Directory: (auto: .next)
+      Install Command: (auto: npm install)
+      Development Command: (auto: npm run dev)
+      ```
+   
+   d. **Visual Check:** Your settings should look like:
+      ```
+      Framework Preset: Next.js
+      Root Directory: frontend-nextjs  ← MUST BE SET!
+      Build Command: npm run build
+      Output Directory: .next
+      ```
 
 4. **Add Environment Variables**
    

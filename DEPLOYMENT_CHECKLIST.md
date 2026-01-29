@@ -1,5 +1,24 @@
 # 🚀 Quick Deployment Checklist
 
+## 🚨 QUICK FIX: "Could not read package.json" Error on Vercel
+
+**Getting this error?**
+```
+npm error path /vercel/path0/package.json
+npm error enoent Could not read package.json
+```
+
+**Fix in 60 seconds:**
+1. Go to: https://vercel.com/dashboard
+2. Click your project → **Settings** → **General**
+3. Find **"Root Directory"** → Click **"Edit"**
+4. Type: `frontend-nextjs` → Click **"Save"**
+5. Go to **Deployments** → Click **"..."** → **"Redeploy"**
+
+✅ Done! Build will now succeed.
+
+---
+
 ## Pre-Deployment
 - [ ] All code committed and pushed to Git
 - [ ] Environment variables configured locally
@@ -36,18 +55,26 @@
 
 ## Frontend Deployment (Vercel)
 
+## Frontend Deployment (Vercel)
+
 ### 4. Deploy Frontend (5 min)
-- [ ] Login to Vercel
-- [ ] Import Git repository
-- [ ] **⚠️ CRITICAL:** Set Root Directory to `frontend-nextjs` (not blank!)
-  - This tells Vercel where package.json is located
-  - Without this, you'll get "No Next.js version detected" error
-- [ ] Framework should auto-detect as Next.js
-- [ ] Add environment variables:
+- [ ] Login to Vercel: https://vercel.com/new
+- [ ] Click "Import Git Repository"
+- [ ] Select your NavFlow repository
+- [ ] **🔴 STOP! Before clicking Deploy:**
+  - [ ] Find "Root Directory" setting (click "Edit" if collapsed)
+  - [ ] Type: `frontend-nextjs` (exactly, no spaces)
+  - [ ] Verify it shows: "Root Directory: frontend-nextjs"
+  - [ ] Framework should show: "Next.js" (auto-detected)
+- [ ] Add environment variables (click "Environment Variables"):
   - [ ] NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
   - [ ] NEXT_PUBLIC_API_BASE_PATH=/api/v1
-- [ ] Deploy
+- [ ] NOW click "Deploy"
+- [ ] Wait 2-3 minutes for build
 - [ ] Copy frontend URL: `https://______.vercel.app`
+
+**If build fails with "Could not read package.json":**
+- You forgot to set Root Directory! Go to Settings → General → Root Directory → Edit → `frontend-nextjs` → Save → Redeploy
 
 ## Final Configuration
 
