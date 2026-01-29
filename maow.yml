@@ -21,7 +21,7 @@ http://localhost:8001/login.html
 Login with: projectowner@example.com / TestPass123!
 
 ### Backend API Docs (Phase 5 - Interactive)
-http://localhost:8000/api/docs/ ← TRY THIS FIRST!
+http://localhost:8000/api/docs/ ← TRY THIS FIRST!!
 
 ### Admin Panel
 http://localhost:8000/admin/
