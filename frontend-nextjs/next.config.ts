@@ -1,13 +1,16 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
   
-  // Disable Turbopack and use webpack for builds (better path alias support)
-  experimental: {
-    turbo: {
-      enabled: false
-    }
+  // Explicitly configure webpack to resolve path aliases
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+    };
+    return config;
   },
   
   // Security headers
