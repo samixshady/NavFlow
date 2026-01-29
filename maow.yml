@@ -7,7 +7,7 @@ venv\Scripts\activate
 python manage.py runserver
 → Runs on http://localhost:8000
 
-### Terminal 2: Frontend Server
+### Terminal 2: Frontend Servers
 cd frontend-nextjs
 npm run dev
 → Runs on http://localhost:3000
