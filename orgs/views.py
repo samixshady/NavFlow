@@ -360,6 +360,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         Invite a user to the organization by username.
         Only owners and admins can invite.
         Creates a notification for the invited user.
+        Can optionally include project_ids to give access to specific projects.
         """
         organization = self.get_object()
         
@@ -420,6 +421,9 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             invited_by=request.user,
             role=serializer.validated_data['role']
         )
+        
+        # Note: Project access is managed separately through the member projects endpoint
+        # after the invitation is accepted
         
         # Create notification for the invited user
         from accounts.models import Notification
@@ -502,6 +506,134 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             MembershipSerializer(member_membership).data,
             status=status.HTTP_200_OK
         )
+
+    @action(detail=True, methods=['get'], url_path='members/(?P<user_email>[^/.]+)/projects')
+    def member_projects(self, request, pk=None, user_email=None):
+        """
+        Get the list of project IDs that a member has access to.
+        Only owners and admins can view member project access.
+        """
+        organization = self.get_object()
+        
+        # Check if requester is admin or owner
+        try:
+            requester_membership = Membership.objects.get(user=request.user, organization=organization)
+            if requester_membership.role not in [Membership.ADMIN, Membership.OWNER]:
+                return Response(
+                    {'detail': 'Only owners and admins can view member project access.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get the member
+        try:
+            member_user = User.objects.get(email=user_email)
+            Membership.objects.get(user=member_user, organization=organization)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'User is not a member of this organization.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get projects the member has access to
+        from projects.models import Project, ProjectRole
+        project_roles = ProjectRole.objects.filter(
+            user=member_user,
+            project__organization=organization
+        ).values_list('project_id', flat=True)
+        
+        return Response({'project_ids': list(project_roles)})
+    
+    @action(detail=True, methods=['post'], url_path='members/(?P<user_email>[^/.]+)/projects/update')
+    def update_member_projects(self, request, pk=None, user_email=None):
+        """
+        Update the list of projects a member has access to.
+        Only owners and admins can update member project access.
+        """
+        organization = self.get_object()
+        
+        # Check if requester is admin or owner
+        try:
+            requester_membership = Membership.objects.get(user=request.user, organization=organization)
+            if requester_membership.role not in [Membership.ADMIN, Membership.OWNER]:
+                return Response(
+                    {'detail': 'Only owners and admins can update member project access.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this organization.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get the member
+        try:
+            member_user = User.objects.get(email=user_email)
+            member_membership = Membership.objects.get(user=member_user, organization=organization)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Membership.DoesNotExist:
+            return Response(
+                {'detail': 'User is not a member of this organization.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get project IDs from request
+        project_ids = request.data.get('project_ids', [])
+        if not isinstance(project_ids, list):
+            return Response(
+                {'detail': 'project_ids must be a list.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify all projects belong to this organization
+        from projects.models import Project, ProjectRole
+        projects = Project.objects.filter(id__in=project_ids, organization=organization)
+        if projects.count() != len(project_ids):
+            return Response(
+                {'detail': 'Some projects do not belong to this organization.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Remove user from all projects in this org first
+        ProjectRole.objects.filter(
+            user=member_user,
+            project__organization=organization
+        ).delete()
+        
+        # Add user to selected projects with appropriate role based on their org role
+        project_role_map = {
+            Membership.OWNER: ProjectRole.OWNER,
+            Membership.ADMIN: ProjectRole.ADMIN,
+            Membership.MODERATOR: ProjectRole.MODERATOR,
+            Membership.MEMBER: ProjectRole.MEMBER,
+        }
+        
+        project_role = project_role_map.get(member_membership.role, ProjectRole.MEMBER)
+        
+        for project in projects:
+            ProjectRole.objects.create(
+                user=member_user,
+                project=project,
+                role=project_role
+            )
+        
+        return Response({
+            'detail': 'Project access updated successfully.',
+            'project_ids': project_ids
+        })
     
     @action(detail=True, methods=['get'])
     def permissions(self, request, pk=None):
@@ -661,7 +793,7 @@ class InvitationViewSet(viewsets.ViewSet):
     
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
-        """Accept an invitation."""
+        """Accept an invitation and optionally assign to projects."""
         try:
             invitation = Invitation.objects.get(
                 id=pk,
@@ -676,6 +808,40 @@ class InvitationViewSet(viewsets.ViewSet):
         
         try:
             invitation.accept()
+            
+            # Handle initial project assignment if provided
+            project_ids = request.data.get('project_ids', [])
+            if project_ids:
+                from projects.models import Project, ProjectRole
+                
+                # Get org membership to determine project role
+                member_membership = Membership.objects.get(
+                    user=request.user,
+                    organization=invitation.organization
+                )
+                
+                # Map org role to project role
+                project_role_map = {
+                    Membership.OWNER: ProjectRole.OWNER,
+                    Membership.ADMIN: ProjectRole.ADMIN,
+                    Membership.MODERATOR: ProjectRole.MODERATOR,
+                    Membership.MEMBER: ProjectRole.MEMBER,
+                }
+                project_role = project_role_map.get(member_membership.role, ProjectRole.MEMBER)
+                
+                # Verify projects belong to organization and add user
+                projects = Project.objects.filter(
+                    id__in=project_ids,
+                    organization=invitation.organization
+                )
+                
+                for project in projects:
+                    ProjectRole.objects.get_or_create(
+                        user=request.user,
+                        project=project,
+                        defaults={'role': project_role}
+                    )
+            
             return Response({
                 'detail': f'You are now a member of {invitation.organization.name}.',
                 'organization_id': invitation.organization.id

@@ -9,8 +9,8 @@ python manage.py runserver
 
 ### Terminal 2: Frontend Server
 cd frontend-nextjs
-python -m http.server 8001
-→ Runs on http://localhost:8001
+npm run dev
+→ Runs on http://localhost:3000
 
 ---
 

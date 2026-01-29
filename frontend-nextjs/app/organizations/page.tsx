@@ -26,6 +26,8 @@ import {
   Tag,
   Timer,
   RefreshCw,
+  FolderKanban,
+  Edit,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -60,6 +62,12 @@ interface Invitation {
   status: string;
   status_display: string;
   created_at: string;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  organization: number;
 }
 
 interface OrgPermissions {
@@ -177,6 +185,7 @@ export default function OrganizationsPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
   const [orgInvitations, setOrgInvitations] = useState<Invitation[]>([]);
+
   
   // Permission states
   const [showPermissions, setShowPermissions] = useState(false);
@@ -489,6 +498,8 @@ export default function OrganizationsPage() {
     }
   };
 
+
+
   const filteredOrganizations = organizations.filter(org =>
     org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     org.description?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -698,74 +709,94 @@ export default function OrganizationsPage() {
 
       {/* Create Organization Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Organization</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  Create Organization
+                </h2>
+                <p className="text-base text-gray-600 dark:text-gray-400 mt-2 ml-14">Set up a new organization workspace</p>
+              </div>
               <button
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setError('');
                   setSuccess('');
                 }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-3 hover:bg-white/50 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-800 dark:text-red-200 text-sm">
-                {error}
-              </div>
-            )}
+            {/* Content */}
+            <div className="p-8">
+              {error && (
+                <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {error}
+                </div>
+              )}
 
-            <form onSubmit={handleCreateOrg} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Organization Name *
-                </label>
-                <input
-                  type="text"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Enter organization name"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={orgDescription}
-                  onChange={(e) => setOrgDescription(e.target.value)}
-                  placeholder="Enter organization description"
-                  rows={4}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateModalOpen(false);
-                    setError('');
-                    setSuccess('');
-                  }}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
+              <form onSubmit={handleCreateOrg} className="space-y-6">
+                {/* Organization Name */}
+                <div>
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-purple-500" />
+                    Organization Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    placeholder="Enter organization name"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                    required
+                  />
+                </div>
+
+                {/* Organization Description */}
+                <div>
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Edit className="w-5 h-5 text-purple-500" />
+                    Description
+                  </label>
+                  <textarea
+                    value={orgDescription}
+                    onChange={(e) => setOrgDescription(e.target.value)}
+                    placeholder="Enter organization description"
+                    rows={5}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setError('');
+                  setSuccess('');
+                }}
+                className="flex-1 px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors font-semibold text-base"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                onClick={handleCreateOrg}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+              >
+                Create Organization
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -773,9 +804,12 @@ export default function OrganizationsPage() {
       {/* Organization Detail Modal */}
       {isDetailModalOpen && selectedOrg && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-2 -mt-2 pt-2">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedOrg.name}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-2 -mt-2 pt-2 z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedOrg.name}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedOrg.description || 'No description'}</p>
+              </div>
               <button
                 onClick={() => {
                   setIsDetailModalOpen(false);
@@ -798,32 +832,102 @@ export default function OrganizationsPage() {
               </div>
             )}
 
-            {/* Organization Info */}
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{selectedOrg.description || 'No description'}</p>
-              {/* Debug: showing raw user_role */}
-              <p className="text-xs text-red-500 mb-2 font-bold">DEBUG: user_role = "{selectedOrg.user_role}" | type = {typeof selectedOrg.user_role} | is owner: {String(selectedOrg.user_role === 'owner')}</p>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                <span>Owner: {selectedOrg.owner_email}</span>
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedOrg.user_role)}`}>
-                  {getRoleIcon(selectedOrg.user_role)}
-                  Your role: {selectedOrg.user_role}
-                </span>
-              </div>
+            {/* Organization Info Badge */}
+            <div className="mb-6 flex items-center gap-4 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Owner: {selectedOrg.owner_email}</span>
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedOrg.user_role)}`}>
+                {getRoleIcon(selectedOrg.user_role)}
+                Your role: {selectedOrg.user_role}
+              </span>
             </div>
 
-            {/* Manage Permissions Button - Always visible for testing */}
-            <div className="mb-4">
-              <button
-                onClick={() => {
-                  setIsDetailModalOpen(false);
-                  router.push(`/organizations/permissions?org=${selectedOrg.id}`);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
-              >
-                <Shield className="w-5 h-5" />
-                Manage Permissions (Full Page)
-              </button>
+            {/* Bento Box Action Grid */}
+            <div className="mb-6 grid grid-cols-2 gap-4">
+              {/* Invite Member */}
+              {(selectedOrg.user_role === 'owner' || selectedOrg.user_role === 'admin') && (
+                <button
+                  onClick={() => {
+                    const inviteSection = document.getElementById('invite-section');
+                    inviteSection?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 hover:from-purple-600 hover:via-purple-700 hover:to-pink-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                >
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      <UserPlus className="w-6 h-6" />
+                    </div>
+                    <p className="font-bold text-base">Invite Member</p>
+                    <p className="text-xs opacity-90 mt-1">Add new people</p>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+                </button>
+              )}
+
+              {/* Edit Organization */}
+              {(selectedOrg.user_role === 'owner' || selectedOrg.user_role === 'admin') && (
+                <button
+                  onClick={() => {
+                    setError('Edit functionality coming soon!');
+                    setTimeout(() => setError(''), 2000);
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                >
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      <Edit className="w-6 h-6" />
+                    </div>
+                    <p className="font-bold text-base">Edit</p>
+                    <p className="text-xs opacity-90 mt-1">Update details</p>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+                </button>
+              )}
+
+              {/* Manage Permissions */}
+              {(selectedOrg.user_role === 'owner' || selectedOrg.user_role === 'admin') && (
+                <button
+                  onClick={() => {
+                    setError('Manage Permissions functionality coming soon!');
+                    setTimeout(() => setError(''), 2000);
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-600 hover:from-amber-600 hover:via-orange-600 hover:to-yellow-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                >
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      <Shield className="w-6 h-6" />
+                    </div>
+                    <p className="font-bold text-base">Permissions</p>
+                    <p className="text-xs opacity-90 mt-1">Manage access</p>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+                </button>
+              )}
+
+              {/* Delete Organization */}
+              {selectedOrg.user_role === 'owner' && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete "${selectedOrg.name}"? This action cannot be undone.`)) {
+                      setError('Delete functionality coming soon!');
+                      setTimeout(() => setError(''), 2000);
+                    }
+                  }}
+                  className="group relative overflow-hidden bg-gradient-to-br from-red-500 via-red-600 to-rose-600 hover:from-red-600 hover:via-red-700 hover:to-rose-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                >
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      <Trash2 className="w-6 h-6" />
+                    </div>
+                    <p className="font-bold text-base">Delete</p>
+                    <p className="text-xs opacity-90 mt-1">Remove org</p>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+                </button>
+              )}
             </div>
 
             {/* Permission Settings - Always visible for testing */}
@@ -994,11 +1098,17 @@ export default function OrganizationsPage() {
 
             {/* Add Member (only for owners and admins) */}
             {(selectedOrg.user_role === 'owner' || selectedOrg.user_role === 'admin') && (
-              <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div id="invite-section" className="mb-6 p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800 shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
+                  <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   Invite Member
                 </h3>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    💡 <strong>Organization Roles:</strong> Control organization-level permissions (create projects, invite members, etc.)<br/>
+                    <span className="mt-1 inline-block">📁 <strong>Project Roles:</strong> Assigned separately when adding members to projects - one member can have different roles in different projects!</span>
+                  </p>
+                </div>
                 <form onSubmit={handleInviteMember} className="space-y-3">
                   <div className="flex gap-3">
                     <input
@@ -1051,42 +1161,58 @@ export default function OrganizationsPage() {
             )}
 
             {/* Members List */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <div id="members-section" className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 Members ({members.length})
               </h3>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {members.map((member) => (
                   <div
                     key={member.user_email}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                    className="relative flex items-center justify-between p-4 rounded-xl border-2 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 transition-all duration-200"
                   >
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{member.user_name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                          {member.user_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{member.user_name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Role Badge or Dropdown for owner */}
                       {selectedOrg.user_role === 'owner' && member.role !== 'owner' ? (
                         <select
                           value={member.role}
-                          onChange={(e) => handleUpdateRole(member.user_email, e.target.value)}
-                          className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getRoleColor(member.role)}`}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleUpdateRole(member.user_email, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getRoleColor(member.role)}`}
                         >
                           <option value="member">Member</option>
                           <option value="moderator">Moderator</option>
                           <option value="admin">Admin</option>
                         </select>
                       ) : (
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
                           {getRoleIcon(member.role)}
                           {member.role_display}
                         </span>
                       )}
                       {selectedOrg.user_role === 'owner' && member.role !== 'owner' && (
                         <button
-                          onClick={() => handleRemoveMember(member.user_email)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveMember(member.user_email);
+                          }}
                           className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          title="Remove member"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1099,6 +1225,7 @@ export default function OrganizationsPage() {
           </div>
         </div>
       )}
+
     </DashboardLayout>
   );
 }

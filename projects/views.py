@@ -198,7 +198,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         
-        user = User.objects.get(email=serializer.validated_data['email'])
+        user = serializer.validated_data['user']
         
         # Check if user is in the organization
         if not Membership.objects.filter(
@@ -241,13 +241,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def remove_member(self, request, pk=None):
         """
         Remove a member from the project.
-        Only owner can remove members.
+        Only owner and admin can remove members.
         """
         project = self.get_object()
         
-        if not (IsProjectOwner().has_object_permission(request, self, project)):
+        # Check if user is owner or admin
+        try:
+            user_role = ProjectRole.objects.get(user=request.user, project=project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN]:
+                return Response(
+                    {'detail': 'Only project owners and admins can remove members'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except ProjectRole.DoesNotExist:
             return Response(
-                {'detail': 'Only project owner can remove members'},
+                {'detail': 'You are not a member of this project'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
@@ -278,8 +286,96 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Admins cannot remove other admins, only owner can
+        if user_role.role == ProjectRole.ADMIN and role.role == ProjectRole.ADMIN:
+            return Response(
+                {'detail': 'Admins cannot remove other admins'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         role.delete()
         return Response({'detail': 'Member removed successfully'}, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='update-member-role')
+    def update_member_role(self, request, pk=None):
+        """
+        Update a member's role in the project.
+        Only owner and admin can update roles.
+        """
+        project = self.get_object()
+        
+        # Check if user is owner or admin
+        try:
+            user_role = ProjectRole.objects.get(user=request.user, project=project)
+            if user_role.role not in [ProjectRole.OWNER, ProjectRole.ADMIN]:
+                return Response(
+                    {'detail': 'Only project owners and admins can update member roles'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except ProjectRole.DoesNotExist:
+            return Response(
+                {'detail': 'You are not a member of this project'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user_email = request.data.get('email')
+        new_role = request.data.get('role')
+        
+        if not user_email:
+            return Response(
+                {'detail': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not new_role or new_role not in [ProjectRole.MEMBER, ProjectRole.MODERATOR, ProjectRole.ADMIN, ProjectRole.OWNER]:
+            return Response(
+                {'detail': 'Invalid role'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            user = User.objects.get(email=user_email)
+            role = ProjectRole.objects.get(user=user, project=project)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except ProjectRole.DoesNotExist:
+            return Response(
+                {'detail': 'User is not a member of this project'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Cannot change owner role
+        if role.role == ProjectRole.OWNER:
+            return Response(
+                {'detail': 'Cannot change the project owner role'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Cannot change to owner role
+        if new_role == ProjectRole.OWNER:
+            return Response(
+                {'detail': 'Cannot assign owner role. Projects can only have one owner.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Admins cannot change other admins' roles, only owner can
+        if user_role.role == ProjectRole.ADMIN and role.role == ProjectRole.ADMIN:
+            return Response(
+                {'detail': 'Admins cannot change other admins\' roles'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        role.role = new_role
+        role.save()
+        
+        return Response({
+            'detail': 'Member role updated successfully',
+            'role': role.role,
+            'role_display': role.get_role_display()
+        }, status=status.HTTP_200_OK)
 
 
 class TaskViewSet(viewsets.ModelViewSet):

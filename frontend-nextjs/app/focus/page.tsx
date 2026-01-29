@@ -109,7 +109,7 @@ export default function FocusModePage() {
 
   const fetchFocusedTasks = async () => {
     try {
-      const response = await api.get('/projects/focus/');
+      const response = await api.get('/focus/');
       setFocusedTasks(response.data.results || response.data || []);
     } catch (err) {
       console.error('Error fetching focused tasks:', err);
@@ -139,7 +139,7 @@ export default function FocusModePage() {
 
   const unfocusTask = async (focusId: number) => {
     try {
-      await api.post(`/projects/focus/${focusId}/unfocus/`);
+      await api.post(`/focus/${focusId}/unfocus/`);
       setFocusedTasks(focusedTasks.filter(f => f.id !== focusId));
       if (selectedTask?.id === focusId) {
         setSelectedTask(null);
@@ -153,7 +153,7 @@ export default function FocusModePage() {
     if (!selectedTask) return;
     setSavingNotes(true);
     try {
-      await api.patch(`/projects/focus/${selectedTask.id}/update_notes/`, { notes });
+      await api.patch(`/focus/${selectedTask.id}/update_notes/`, { notes });
       setFocusedTasks(focusedTasks.map(f => 
         f.id === selectedTask.id ? { ...f, notes } : f
       ));

@@ -37,6 +37,8 @@ import {
   Focus,
   MessageSquare,
   Paperclip,
+  Loader2,
+  Send,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import api from '@/lib/api';
@@ -50,6 +52,15 @@ interface TaskSection {
   position: number;
   is_default: boolean;
   project: number;
+}
+
+interface Label {
+  id: number;
+  name: string;
+  color: string;
+  bg_color: string;
+  icon?: string;
+  description?: string;
 }
 
 interface Task {
@@ -82,6 +93,7 @@ interface Task {
   focused_id?: number;
   comments_count: number;
   attachments_count: number;
+  labels_data?: Label[];
 }
 
 interface Project {
@@ -158,6 +170,22 @@ export default function TasksPage() {
   const [showLeftScroll, setShowLeftScroll] = useState(false);
   const [showRightScroll, setShowRightScroll] = useState(false);
   
+  // Project members for assignee selection
+  const [projectMembers, setProjectMembers] = useState<{id: number; email: string; name: string}[]>([]);
+  const [taskAssignee, setTaskAssignee] = useState<number | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  
+  // Labels
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
+  const [taskLabels, setTaskLabels] = useState<number[]>([]);
+  
+  // Comments
+  const [taskComments, setTaskComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  
   // Form states
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
@@ -215,6 +243,21 @@ export default function TasksPage() {
       fetchProjects();
     }
   }, [router]);
+
+  // Handle URL parameter for opening task from notification
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('task');
+    
+    if (taskId && tasks.length > 0) {
+      const task = tasks.find(t => t.id === parseInt(taskId));
+      if (task) {
+        openTaskDetail(task);
+        // Clear the URL parameter after opening the task
+        window.history.replaceState({}, '', '/tasks');
+      }
+    }
+  }, [tasks]);
 
   useEffect(() => {
     checkScroll();
@@ -289,12 +332,26 @@ export default function TasksPage() {
     }
 
     try {
-      await api.post('/sections/', {
+      // Generate slug from name
+      const slug = sectionName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      console.log('Creating section with data:', {
         name: sectionName,
+        slug: slug,
         color: sectionColor,
         icon: sectionIcon !== 'none' ? sectionIcon : null,
-        project: parseInt(sectionProjectId),
+        project_id: parseInt(sectionProjectId),
       });
+      
+      const response = await api.post('/sections/', {
+        name: sectionName,
+        slug: slug,
+        color: sectionColor,
+        icon: sectionIcon !== 'none' ? sectionIcon : null,
+        project_id: parseInt(sectionProjectId),
+      });
+      
+      console.log('Section created successfully:', response.data);
       setSuccess('Section created successfully!');
       resetSectionForm();
       setIsSectionModalOpen(false);
@@ -302,7 +359,14 @@ export default function TasksPage() {
         fetchSections(parseInt(filterProject));
       }
     } catch (err: any) {
-      setError(err.response?.data?.name?.[0] || err.response?.data?.detail || 'Failed to create section');
+      console.error('Section creation error:', err);
+      console.error('Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.detail 
+        || err.response?.data?.name?.[0] 
+        || err.response?.data?.error
+        || JSON.stringify(err.response?.data)
+        || 'Failed to create section';
+      setError(errorMsg);
     }
   };
 
@@ -416,7 +480,7 @@ export default function TasksPage() {
     setTaskEstimatedHours('');
   };
 
-  const openTaskDetail = (task: Task) => {
+  const openTaskDetail = async (task: Task) => {
     setSelectedTask(task);
     setTaskTitle(task.title);
     setTaskDescription(task.description || '');
@@ -424,7 +488,71 @@ export default function TasksPage() {
     setTaskPriority(task.priority);
     setTaskDueDate(task.due_date ? task.due_date.split('T')[0] : '');
     setTaskEstimatedHours(task.estimated_hours?.toString() || '');
+    setTaskAssignee(task.assigned_to);
+    setTaskLabels(task.labels_data?.map(l => l.id) || []);
     setIsDetailModalOpen(true);
+    
+    // Fetch project members for assignee dropdown
+    try {
+      const response = await api.get(`/projects/${task.project}/members/`);
+      setProjectMembers(response.data.map((m: any) => ({
+        id: m.user_id,
+        email: m.user_email,
+        name: m.user_name || m.user_email
+      })));
+    } catch (err) {
+      console.error('Error fetching project members:', err);
+      setProjectMembers([]);
+    }
+    
+    // Fetch available labels for the project
+    try {
+      const response = await api.get(`/labels/?project_id=${task.project}`);
+      setAvailableLabels(response.data.results || response.data || []);
+    } catch (err) {
+      console.error('Error fetching labels:', err);
+      setAvailableLabels([]);
+    }
+    
+    // Fetch comments for the task
+    fetchTaskComments(task.id);
+  };
+  
+  const fetchTaskComments = async (taskId: number) => {
+    setLoadingComments(true);
+    try {
+      const response = await api.get(`/projects/comments/?task_id=${taskId}`);
+      setTaskComments(response.data.results || response.data || []);
+    } catch (err: any) {
+      // Silently handle missing comments endpoint - it's not critical
+      if (err?.response?.status !== 404) {
+        console.error('Error fetching comments:', err);
+      }
+      setTaskComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+  
+  const handleSubmitComment = async () => {
+    if (!selectedTask || !newComment.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const response = await api.post('/projects/comments/', {
+        task: selectedTask.id,
+        content: newComment
+      });
+      setTaskComments([...taskComments, response.data]);
+      setNewComment('');
+      setSuccess('Comment added successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('Error submitting comment:', err);
+      setError('Failed to add comment');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const handleUpdateTask = async (e: React.FormEvent) => {
@@ -443,6 +571,8 @@ export default function TasksPage() {
         description: taskDescription,
         priority: taskPriority,
         section: taskSection,
+        assigned_to: taskAssignee,
+        labels: taskLabels,
       };
       
       if (taskDueDate) {
@@ -454,7 +584,24 @@ export default function TasksPage() {
         taskData.estimated_hours = parseFloat(taskEstimatedHours);
       }
 
-      await api.patch(`/tasks/${selectedTask.id}/`, taskData);
+      const response = await api.patch(`/tasks/${selectedTask.id}/`, taskData);
+      
+      // Send notification if assignee changed
+      if (taskAssignee && taskAssignee !== selectedTask.assigned_to) {
+        try {
+          await api.post('/notifications/', {
+            user: taskAssignee,
+            type: 'task_assigned',
+            title: 'Task Assigned',
+            message: `You have been assigned to task: ${taskTitle}`,
+            link: `/tasks?task=${selectedTask.id}`,
+            related_task_id: selectedTask.id
+          });
+        } catch (notifErr) {
+          console.error('Failed to send notification:', notifErr);
+        }
+      }
+      
       setSuccess('Task updated successfully!');
       setIsDetailModalOpen(false);
       fetchTasks();
@@ -534,7 +681,7 @@ export default function TasksPage() {
   const handleFocusTask = async (task: Task, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
-      const response = await api.post('/projects/focus/', { task: task.id });
+      const response = await api.post('/focus/', { task: task.id });
       setTasks(tasks.map(t => t.id === task.id ? { ...t, is_focused: true, focused_id: response.data.id } : t));
       if (selectedTask?.id === task.id) {
         setSelectedTask({ ...task, is_focused: true, focused_id: response.data.id });
@@ -543,6 +690,7 @@ export default function TasksPage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       console.error('Failed to focus task:', err);
+      console.error('Error response:', err.response?.data);
       if (err.response?.status === 400) {
         setError('Task is already in Focus Mode');
       } else {
@@ -557,10 +705,10 @@ export default function TasksPage() {
     if (!task.focused_id) {
       // Try to find the focused_id first
       try {
-        const response = await api.get(`/projects/focus/?task_id=${task.id}`);
+        const response = await api.get(`/focus/?task_id=${task.id}`);
         const focusedList = response.data.results || response.data || [];
         if (focusedList.length > 0) {
-          await api.post(`/projects/focus/${focusedList[0].id}/unfocus/`);
+          await api.post(`/focus/${focusedList[0].id}/unfocus/`);
           setTasks(tasks.map(t => t.id === task.id ? { ...t, is_focused: false, focused_id: undefined } : t));
           if (selectedTask?.id === task.id) {
             setSelectedTask({ ...task, is_focused: false, focused_id: undefined });
@@ -578,7 +726,7 @@ export default function TasksPage() {
       }
     } else {
       try {
-        await api.post(`/projects/focus/${task.focused_id}/unfocus/`);
+        await api.post(`/focus/${task.focused_id}/unfocus/`);
         setTasks(tasks.map(t => t.id === task.id ? { ...t, is_focused: false, focused_id: undefined } : t));
         if (selectedTask?.id === task.id) {
           setSelectedTask({ ...task, is_focused: false, focused_id: undefined });
@@ -879,71 +1027,72 @@ export default function TasksPage() {
     <DashboardLayout>
       <div className="flex flex-col min-h-0 flex-1">
       {/* Header */}
-      <div className="mb-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-shrink-0">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            My Tasks
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} 
-            {hasActiveFilters && ' (filtered)'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="mb-4 flex flex-col gap-3 md:gap-4 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-1">
+              My Tasks
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+              {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} 
+              {hasActiveFilters && ' (filtered)'}
+            </p>
+          </div>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
           >
             <Plus className="w-5 h-5" />
-            New Task
+            <span className="hidden sm:inline">New Task</span>
           </button>
         </div>
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="mb-4 space-y-4 flex-shrink-0">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="mb-4 space-y-3 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {/* Search */}
-          <div className="flex-1 min-w-[250px] max-w-md relative">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search tasks..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm md:text-base"
             />
           </div>
 
+          <div className="flex items-center gap-2">
           {/* Filter Toggle */}
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all flex-1 sm:flex-initial ${
               isFilterOpen || hasActiveFilters
                 ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-purple-300'
             }`}
           >
             <Filter className="w-4 h-4" />
-            Filters
+            <span className="text-sm md:text-base">Filters</span>
             {hasActiveFilters && (
               <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
             )}
           </button>
 
           {/* Sort */}
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex-1 sm:flex-initial">
             <select
               value={sortField}
               onChange={(e) => setSortField(e.target.value as SortField)}
-              className="px-3 py-2.5 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none text-sm"
+              className="px-3 py-2.5 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none text-xs md:text-sm flex-1"
             >
-              <option value="created_at">Date Created</option>
-              <option value="due_date">Due Date</option>
+              <option value="created_at">Date</option>
+              <option value="due_date">Due</option>
               <option value="priority">Priority</option>
               <option value="title">Title</option>
-              <option value="time_spent">Time Spent</option>
-              <option value="organization">Organization</option>
+              <option value="time_spent">Time</option>
+              <option value="organization">Org</option>
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
@@ -956,22 +1105,24 @@ export default function TasksPage() {
               )}
             </button>
           </div>
+          </div>
 
           {/* Clear Filters */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+              className="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors sm:hidden"
             >
               <X className="w-4 h-4" />
               Clear
             </button>
           )}
         </div>
+        </div>
 
         {/* Expanded Filters */}
         {isFilterOpen && (
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl animate-in slide-in-from-top-2 duration-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 p-3 md:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl animate-in slide-in-from-top-2 duration-200">
             <select
               value={filterOrganization}
               onChange={(e) => {
@@ -980,7 +1131,7 @@ export default function TasksPage() {
                 setActiveSection(null);
                 setShowAllTasks(true);
               }}
-              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
             >
               <option value="all">All Organizations</option>
               {uniqueOrganizations.map((org) => (
@@ -997,7 +1148,7 @@ export default function TasksPage() {
                 setActiveSection(null);
                 setShowAllTasks(true);
               }}
-              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
             >
               <option value="all">All Projects</option>
               {projects
@@ -1012,7 +1163,7 @@ export default function TasksPage() {
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
             >
               <option value="all">All Priorities</option>
               <option value="urgent">🔴 Urgent</option>
@@ -1024,7 +1175,7 @@ export default function TasksPage() {
             <select
               value={filterDueDate}
               onChange={(e) => setFilterDueDate(e.target.value)}
-              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
             >
               <option value="all">Any Due Date</option>
               <option value="overdue">⚠️ Overdue</option>
@@ -1244,48 +1395,115 @@ export default function TasksPage() {
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => handleDragOver(e, task.id)}
                 onClick={() => openTaskDetail(task)}
-                className={`flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all group ${
+                className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all group ${
                   draggedTask?.id === task.id ? 'opacity-50' : ''
                 } ${dragOverTaskId === task.id ? 'border-t-2 border-t-purple-500' : ''}`}
               >
-                {/* Drag Handle */}
-                <GripVertical className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity" />
-                
-                {/* Priority Indicator */}
-                <div className="flex-shrink-0">
-                  {getPriorityIcon(task.priority)}
+                {/* Mobile: Top Row */}
+                <div className="flex items-start gap-3 w-full sm:flex-1">
+                  {/* Drag Handle - Hidden on mobile */}
+                  <GripVertical className="hidden sm:block w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity" />
+                  
+                  {/* Priority Indicator */}
+                  <div className="flex-shrink-0">
+                    {getPriorityIcon(task.priority)}
+                  </div>
+                  
+                  {/* Task Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white line-clamp-2 sm:truncate text-sm md:text-base">
+                        {task.title}
+                      </h4>
+                      {task.section_color && (
+                        <span 
+                          className="px-2 py-0.5 text-xs font-medium rounded-full text-white flex items-center gap-1 w-fit"
+                          style={{ backgroundColor: task.section_color }}
+                          title={task.section_name || 'Section'}
+                        >
+                          {task.section_name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">{task.project_name}</span>
+                      {task.description && (
+                        <>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="line-clamp-1 sm:truncate sm:max-w-[200px]">{task.description}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Task Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                      {task.title}
-                    </h4>
-                    {task.section_color && (
-                      <span 
-                        className="px-2 py-0.5 text-xs font-medium rounded-full text-white flex items-center gap-1"
-                        style={{ backgroundColor: task.section_color }}
-                        title={task.section_name || 'Section'}
-                      >
-                        {task.section_name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{task.project_name}</span>
-                    {task.description && (
-                      <>
-                        <span>•</span>
-                        <span className="truncate max-w-[200px]">{task.description}</span>
-                      </>
-                    )}
+                {/* Mobile: Second Row - Metadata */}
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                  {/* Priority Badge - Mobile only */}
+                  <span className={`sm:hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                    {task.priority}
+                  </span>
+                  
+                  {/* Due Date */}
+                  {task.due_date && (
+                    <div className={`flex items-center gap-1.5 text-xs md:text-sm flex-shrink-0 ${
+                      isOverdue(task.due_date) 
+                        ? 'text-red-600 dark:text-red-400' 
+                        : isDueSoon(task.due_date) 
+                          ? 'text-orange-600 dark:text-orange-400' 
+                          : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      <Calendar className="w-3 h-3 md:w-4 md:h-4" />
+                      {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  )}
+                  
+                  {/* Timer Display */}
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs md:text-sm font-mono ${
+                      task.is_timer_running 
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    }`}>
+                      <Timer className={`w-3 h-3 md:w-4 md:h-4 ${task.is_timer_running ? 'animate-pulse' : ''}`} />
+                      <span>{formatTimeDisplay(task)}</span>
+                    </div>
+                    
+                    {/* Timer Controls */}
+                    <div className="flex items-center gap-1">
+                      {task.is_timer_running ? (
+                        <>
+                          <button
+                            onClick={(e) => handlePauseTimer(task, e)}
+                            className="p-1.5 md:p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
+                            title="Pause Timer"
+                          >
+                            <Pause className="w-3 h-3 md:w-4 md:h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => handleStopTimer(task, e)}
+                            className="p-1.5 md:p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
+                            title="Stop Timer"
+                          >
+                            <Square className="w-3 h-3 md:w-4 md:h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={(e) => handleStartTimer(task, e)}
+                          className="p-1.5 md:p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all"
+                          title="Start Timer"
+                        >
+                          <Play className="w-3 h-3 md:w-4 md:h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                {/* Section Selector (Quick Change) */}
+                {/* Section Selector - Desktop only */}
                 {sections.length > 0 && (
-                  <div className="hidden md:block flex-shrink-0">
+                  <div className="hidden lg:block flex-shrink-0">
                     <select
                       value={task.section?.toString() || ''}
                       onChange={(e) => {
@@ -1305,66 +1523,10 @@ export default function TasksPage() {
                   </div>
                 )}
                 
-                {/* Priority Badge */}
+                {/* Priority Badge - Desktop only */}
                 <span className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
                   {task.priority}
                 </span>
-                
-                {/* Due Date */}
-                {task.due_date && (
-                  <div className={`hidden lg:flex items-center gap-1.5 text-sm flex-shrink-0 ${
-                    isOverdue(task.due_date) 
-                      ? 'text-red-600 dark:text-red-400' 
-                      : isDueSoon(task.due_date) 
-                        ? 'text-orange-600 dark:text-orange-400' 
-                        : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                    <Calendar className="w-4 h-4" />
-                    {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
-                )}
-                
-                {/* Timer Display */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-sm font-mono ${
-                    task.is_timer_running 
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  }`}>
-                    <Timer className={`w-4 h-4 ${task.is_timer_running ? 'animate-pulse' : ''}`} />
-                    <span>{formatTimeDisplay(task)}</span>
-                  </div>
-                  
-                  {/* Timer Controls */}
-                  <div className="flex items-center gap-1">
-                    {task.is_timer_running ? (
-                      <>
-                        <button
-                          onClick={(e) => handlePauseTimer(task, e)}
-                          className="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
-                          title="Pause Timer"
-                        >
-                          <Pause className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => handleStopTimer(task, e)}
-                          className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
-                          title="Stop Timer"
-                        >
-                          <Square className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={(e) => handleStartTimer(task, e)}
-                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all"
-                        title="Start Timer"
-                      >
-                        <Play className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
                 
                 {/* Assignee */}
                 {task.assigned_to_email && (
@@ -1382,110 +1544,127 @@ export default function TasksPage() {
         )}
       </div>
       </div>
-      </div>
 
       {/* Create Task Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl my-8 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Task</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full shadow-2xl my-8 animate-in zoom-in-95 duration-200 max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  Create New Task
+                </h2>
+                <p className="text-base text-gray-600 dark:text-gray-400 mt-2 ml-14">Add a new task to your project</p>
+              </div>
               <button
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setError('');
                   resetForm();
                 }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                className="p-3 hover:bg-white/50 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            )}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-8">
+              {error && (
+                <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200 flex items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-base">{error}</span>
+                </div>
+              )}
 
-            <form onSubmit={handleCreateTask} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Project *
-                </label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => {
-                    setSelectedProjectId(e.target.value);
-                    setTaskSection(null);
-                    if (e.target.value) {
-                      fetchSections(parseInt(e.target.value));
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                >
-                  <option value="">Select a project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name} ({project.organization_name})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  placeholder="What needs to be done?"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  placeholder="Add more details..."
-                  rows={3}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                />
-              </div>
-              
-              {/* Section/Label Selection */}
-              {sections.length > 0 && (
+              <form onSubmit={handleCreateTask} className="space-y-6">
+                {/* Project Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Label / Section
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Folder className="w-5 h-5 text-purple-500" />
+                    Project *
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => {
+                      setSelectedProjectId(e.target.value);
+                      setTaskSection(null);
+                      if (e.target.value) {
+                        fetchSections(parseInt(e.target.value));
+                      }
+                    }}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name} ({project.organization_name})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Task Title */}
+                <div>
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <CheckSquare className="w-5 h-5 text-purple-500" />
+                    Task Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    placeholder="What needs to be done?"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                    required
+                  />
+                </div>
+                
+                {/* Description */}
+                <div>
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Edit className="w-5 h-5 text-purple-500" />
+                    Description
+                  </label>
+                  <textarea
+                    value={taskDescription}
+                    onChange={(e) => setTaskDescription(e.target.value)}
+                    placeholder="Add more details about this task..."
+                    rows={4}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
+                  />
+                </div>
+                
+                {/* Section/Label Selection */}
+                {sections.length > 0 && (
+                  <div>
+                    <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-purple-500" />
+                      Label / Section
+                    </label>
+                    <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
                       onClick={() => setTaskSection(null)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-4 py-2.5 rounded-xl text-base font-medium transition-all ${
                         !taskSection
-                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                          ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-md'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
-                      None
+                      No Label
                     </button>
                     {sections.map((section) => (
                       <button
                         key={section.id}
                         type="button"
                         onClick={() => setTaskSection(section.id)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        className={`px-4 py-2.5 rounded-xl text-base font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md ${
                           taskSection === section.id
                             ? 'text-white'
                             : 'bg-gray-100 dark:bg-gray-800 hover:opacity-80'
@@ -1493,11 +1672,11 @@ export default function TasksPage() {
                         style={{
                           backgroundColor: taskSection === section.id ? section.color : undefined,
                           borderColor: section.color,
-                          borderWidth: taskSection !== section.id ? '1px' : '0',
+                          borderWidth: taskSection !== section.id ? '2px' : '0',
                         }}
                       >
                         <span 
-                          className="w-2 h-2 rounded-full" 
+                          className="w-3 h-3 rounded-full" 
                           style={{ backgroundColor: taskSection === section.id ? 'white' : section.color }}
                         />
                         {section.name}
@@ -1507,37 +1686,42 @@ export default function TasksPage() {
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-3">
+              {/* Priority and Due Date */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Flag className="w-5 h-5 text-purple-500" />
                     Priority
                   </label>
                   <select
                     value={taskPriority}
                     onChange={(e) => setTaskPriority(e.target.value as any)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
                   >
-                    <option value="low">🟢 Low</option>
-                    <option value="medium">🟡 Medium</option>
-                    <option value="high">🟠 High</option>
+                    <option value="low">🟢 Low Priority</option>
+                    <option value="medium">🟡 Medium Priority</option>
+                    <option value="high">🟠 High Priority</option>
                     <option value="urgent">🔴 Urgent</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-purple-500" />
                     Due Date
                   </label>
                   <input
                     type="date"
                     value={taskDueDate}
                     onChange={(e) => setTaskDueDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
                   />
                 </div>
               </div>
 
+              {/* Estimated Hours */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-purple-500" />
                   Estimated Hours
                 </label>
                 <input
@@ -1547,40 +1731,48 @@ export default function TasksPage() {
                   value={taskEstimatedHours}
                   onChange={(e) => setTaskEstimatedHours(e.target.value)}
                   placeholder="e.g. 4"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
                 />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateModalOpen(false);
-                    setError('');
-                    resetForm();
-                  }}
-                  className="px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all"
-                >
-                  Create Task
-                </button>
-              </div>
             </form>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setError('');
+                  resetForm();
+                }}
+                className="flex-1 px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors font-semibold text-base"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                onClick={handleCreateTask}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+              >
+                Create Task
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Task Detail Modal */}
       {isDetailModalOpen && selectedTask && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl mb-8 animate-in zoom-in-95 duration-200 max-h-[calc(100vh-6rem)] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Task Details</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center z-[100] p-0 md:p-4 lg:pl-72 lg:pr-12">
+          <div className="bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl w-full max-w-5xl h-[95vh] md:h-[88vh] shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-200 flex flex-col">
+            <div className="flex items-center justify-between p-4 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 flex-shrink-0">
+              <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
+                <div className="p-2 md:p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                  <CheckSquare className="w-5 h-5 md:w-7 md:h-7 text-white" />
+                </div>
+                Task Details
+              </h2>
               <div className="flex items-center gap-2">
                 {/* Focus Button */}
                 <button
@@ -1623,19 +1815,16 @@ export default function TasksPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            )}
-
-            {/* Timer Section */}
-            <div className="mb-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl">
-              <div className="flex items-center justify-between">
+            {/* Two Column Layout */}
+            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+              {/* Left Column - Task Form */}
+              <div className="flex-1 overflow-y-auto lg:pr-4 space-y-4 md:space-y-6">
+                {/* Timer Section */}
+                <div className="mb-4 md:mb-6 p-3 md:p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Time Tracked</p>
-                  <p className={`text-3xl font-bold font-mono ${
+                  <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Time Tracked</p>
+                  <p className={`text-2xl md:text-3xl font-bold font-mono ${
                     selectedTask.is_timer_running 
                       ? 'text-green-600 dark:text-green-400' 
                       : 'text-gray-900 dark:text-white'
@@ -1648,47 +1837,67 @@ export default function TasksPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedTask.is_timer_running ? (
                     <>
                       <button
                         type="button"
                         onClick={(e) => handlePauseTimer(selectedTask, e)}
-                        className="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                        className="px-3 md:px-4 py-2 md:py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base"
                         title="Pause timer (saves time)"
                       >
-                        <Pause className="w-5 h-5" />
-                        Pause
+                        <Pause className="w-4 h-4 md:w-5 md:h-5" />
+                        <span className="hidden sm:inline">Pause</span>
                       </button>
                       <button
                         type="button"
                         onClick={(e) => handleStopTimer(selectedTask, e)}
-                        className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                        className="px-3 md:px-4 py-2 md:py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base"
                         title="Stop timer"
                       >
-                        <Square className="w-5 h-5" />
-                        Stop
+                        <Square className="w-4 h-4 md:w-5 md:h-5" />
+                        <span className="hidden sm:inline">Stop</span>
                       </button>
                     </>
                   ) : (
                     <button
                       type="button"
                       onClick={(e) => handleStartTimer(selectedTask, e)}
-                      className="px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                      className="px-3 md:px-4 py-2 md:py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base"
                     >
-                      <Play className="w-5 h-5" />
-                      Start
+                      <Play className="w-4 h-4 md:w-5 md:h-5" />
+                      <span className="hidden sm:inline">Start</span>
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={(e) => handleResetTimer(selectedTask, e)}
-                    className="p-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all"
+                    className="p-2 md:p-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all"
                     title="Reset Timer"
                   >
-                    <RotateCcw className="w-5 h-5" />
+                    <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Assignment Section */}
+            <div className="mb-4 md:mb-6 p-3 md:p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</p>
+                  <p className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedTask.assigned_to_username || selectedTask.assigned_to_email || 'Unassigned'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(true)}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg text-sm md:text-base"
+                >
+                  <UserIcon className="w-4 h-4 md:w-5 md:h-5" />
+                  {selectedTask.assigned_to ? 'Reassign' : 'Assign Task'}
+                </button>
               </div>
             </div>
 
@@ -1759,6 +1968,48 @@ export default function TasksPage() {
                         {section.name}
                       </button>
                     ))}
+                  </div>
+                </div>
+              )}
+              
+
+
+              {/* Label Selection */}
+              {availableLabels.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Labels
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableLabels.map((label) => {
+                      const isSelected = taskLabels.includes(label.id);
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setTaskLabels(taskLabels.filter(id => id !== label.id));
+                            } else {
+                              setTaskLabels([...taskLabels, label.id]);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'ring-2 ring-offset-2 ring-purple-500 dark:ring-offset-gray-800'
+                              : 'hover:opacity-80'
+                          }`}
+                          style={{
+                            backgroundColor: isSelected ? label.color : label.bg_color,
+                            color: isSelected ? 'white' : label.color,
+                          }}
+                        >
+                          {isSelected && <Check className="w-3 h-3" />}
+                          {label.icon && <Tag className="w-3 h-3" />}
+                          {label.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1842,7 +2093,7 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
                 <button
                   type="button"
                   onClick={() => {
@@ -1850,18 +2101,273 @@ export default function TasksPage() {
                     setError('');
                     setSelectedTask(null);
                   }}
-                  className="px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                  className="px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
                 >
                   Save Changes
                 </button>
               </div>
             </form>
+              </div>
+
+              {/* Right Column - Comments & Activity */}
+              <div className="w-full lg:w-96 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 pt-6 lg:pt-0 lg:pl-6">
+                {/* Inline Assignment UI */}
+                {showAssignModal && (
+                  <div className="mb-6 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-300 dark:border-purple-700 shadow-lg animate-in slide-in-from-top duration-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <UserIcon className="w-5 h-5 text-purple-600" />
+                        Assign Task
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAssignModal(false);
+                          setAssigneeSearch('');
+                        }}
+                        className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </button>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="mb-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={assigneeSearch}
+                          onChange={(e) => setAssigneeSearch(e.target.value)}
+                          placeholder="Search by name or email..."
+                          className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Current Assignment */}
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                        Currently Assigned
+                      </p>
+                      <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-900 dark:text-white font-medium">
+                          {selectedTask.assigned_to_username || selectedTask.assigned_to_email || 'Unassigned'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Members List */}
+                    <div className="max-h-64 overflow-y-auto space-y-2 mb-3">
+                      {/* Unassign Option */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setTaskAssignee(null);
+                            await api.patch(`/tasks/${selectedTask.id}/`, {
+                              assigned_to: null
+                            });
+                            setShowAssignModal(false);
+                            setAssigneeSearch('');
+                            fetchTasks();
+                            const response = await api.get(`/tasks/${selectedTask.id}/`);
+                            setSelectedTask(response.data);
+                            setSuccess('Task unassigned successfully!');
+                            setTimeout(() => setSuccess(''), 3000);
+                          } catch (err) {
+                            setError('Failed to unassign task');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }}
+                        className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
+                          taskAssignee === null
+                            ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500'
+                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        <p className="font-medium text-gray-900 dark:text-white">Unassigned</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Remove assignment</p>
+                      </button>
+
+                      {/* Member List */}
+                      {projectMembers
+                        .filter(member => 
+                          assigneeSearch === '' || 
+                          member.name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+                          member.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+                        )
+                        .map((member) => (
+                          <button
+                            key={member.email}
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                setTaskAssignee(member.id);
+                                await api.patch(`/tasks/${selectedTask.id}/`, {
+                                  assigned_to: member.id
+                                });
+                                
+                                // Send notification
+                                if (member.id !== selectedTask.assigned_to) {
+                                  try {
+                                    await api.post('/notifications/', {
+                                      user: member.id,
+                                      type: 'task_assigned',
+                                      title: 'Task Assigned',
+                                      message: `You have been assigned to task: ${selectedTask.title}`,
+                                      link: `/tasks?task=${selectedTask.id}`,
+                                      related_task_id: selectedTask.id
+                                    });
+                                  } catch (notifErr) {
+                                    console.error('Failed to send notification:', notifErr);
+                                  }
+                                }
+                                
+                                setShowAssignModal(false);
+                                setAssigneeSearch('');
+                                fetchTasks();
+                                const response = await api.get(`/tasks/${selectedTask.id}/`);
+                                setSelectedTask(response.data);
+                                setSuccess(`Task assigned to ${member.name} successfully!`);
+                                setTimeout(() => setSuccess(''), 3000);
+                              } catch (err) {
+                                setError('Failed to assign task');
+                                setTimeout(() => setError(''), 3000);
+                              }
+                            }}
+                            className={`w-full text-left p-2.5 rounded-lg transition-all text-sm ${
+                              taskAssignee === member.id
+                                ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500'
+                                : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{member.email}</p>
+                          </button>
+                        ))}
+                      
+                      {projectMembers.filter(member => 
+                        assigneeSearch === '' || 
+                        member.name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+                        member.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+                      ).length === 0 && assigneeSearch && (
+                        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                          <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No members found matching "{assigneeSearch}"</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    Comments ({taskComments.length})
+                  </h3>
+                </div>
+
+                {/* Comments List */}
+                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                  {loadingComments ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                    </div>
+                  ) : taskComments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No comments yet</p>
+                      <p className="text-sm">Be the first to comment!</p>
+                    </div>
+                  ) : (
+                    taskComments.map((comment) => (
+                      <div key={comment.id} className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                            {comment.author_initials || comment.author_name?.charAt(0) || 'U'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 mb-1">
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                {comment.author_name || comment.author_username}
+                              </p>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {comment.time_ago}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap break-words">
+                              {comment.content}
+                            </p>
+                            {comment.is_edited && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500 italic mt-1 block">
+                                (edited)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Comment */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    rows={3}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        handleSubmitComment();
+                      }
+                    }}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Ctrl+Enter to submit
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSubmitComment}
+                      disabled={!newComment.trim() || submittingComment}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      {submittingComment ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Posting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Comment
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Error/Success Messages - Fixed at bottom */}
+            {error && (
+              <div className="px-6 pb-4">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-800 dark:text-red-200 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
