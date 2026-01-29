@@ -1,42 +1,32 @@
-# Phase 5: Render deployment configuration
-# Deploy backend to Render free tier
+# Render deployment configuration for NavFlow backend
+databases:
+  - name: navflow-db
+    databaseName: navflow_db
+    user: navflow_user
+    plan: free
+    region: oregon
+
 services:
   - type: web
     name: navflow-api
-    env: python
+    runtime: python
     plan: free
-    buildCommand: >
-      pip install -r requirements.txt
-      python manage.py collectstatic --no-input
-      python manage.py migrate
-    startCommand: gunicorn navflow.wsgi:application --bind 0.0.0.0:$PORT
+    branch: main
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate
+    startCommand: gunicorn navflow.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DEBUG
         value: false
-      - key: ALLOWED_HOSTS
-        value: navflow-api.onrender.com
       - key: SECRET_KEY
-        fromDatabase:
-          name: navflow
-          property: secret_key  # Set this in env variables
+        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: navflow
-  
-  - type: pserv
-    name: navflow-db
-    env: postgresql
-    plan: free
-    region: oregon
-    ipAllowList: []  # Allow all IPs from web service
-    
-# Health check
-healthCheckPath: /api/schema/
-
-# Static files
-staticSite:
-  name: navflow-frontend
-  buildCommand: npm install && npm run build
-  publishPath: dist
+          name: navflow-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+    healthCheckPath: /api/v1/health/

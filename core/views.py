@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.db import connection
 from datetime import datetime
+import sys
 
 
 @require_http_methods(["GET"])
@@ -48,3 +50,37 @@ def api_homepage(request):
     }
     
     return JsonResponse(response_data, status=200, safe=True)
+
+
+@require_http_methods(["GET"])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and load balancers.
+    
+    Verifies:
+    - API is responsive
+    - Database connection is working
+    - Python version
+    
+    Returns:
+        JsonResponse: Health status with HTTP 200 if healthy, 503 if unhealthy
+    """
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "checks": {}
+    }
+    
+    # Check database connection
+    try:
+        connection.ensure_connection()
+        health_status["checks"]["database"] = "connected"
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = f"error: {str(e)}"
+        return JsonResponse(health_status, status=503)
+    
+    # Add Python version
+    health_status["python_version"] = sys.version.split()[0]
+    
+    return JsonResponse(health_status, status=200)

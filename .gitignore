@@ -129,12 +129,18 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.*.local
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Keep example files for reference
+!.env.example
+!.env.production.example
 
 # Spyder project settings
 .spyderproject
@@ -203,6 +209,10 @@ dist/
 # Environment variables
 .env.local
 .env.*.local
+
+# Keep production example for deployment reference
+!.env.production
+!frontend-nextjs/.env.production
 
 # IDE and editor
 .vscode/
