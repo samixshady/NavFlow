@@ -1,18 +1,6 @@
-import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve(__dirname),
-      '@/lib': path.resolve(__dirname, 'lib'),
-      '@/components': path.resolve(__dirname, 'components'),
-      '@/app': path.resolve(__dirname, 'app')
-    };
-    return config;
-  },
-
   // Security headers
   async headers() {
     return [
