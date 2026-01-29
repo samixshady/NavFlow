@@ -1,4 +1,5 @@
 # Phase 5: Requirements file for deployment
+setuptools>=68.0.0
 Django==6.0.1
 djangorestframework==3.16.1
 django-cors-headers==4.9.0
