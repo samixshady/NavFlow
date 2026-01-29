@@ -39,7 +39,10 @@
 ### 4. Deploy Frontend (5 min)
 - [ ] Login to Vercel
 - [ ] Import Git repository
-- [ ] Set root directory: `frontend-nextjs`
+- [ ] **⚠️ CRITICAL:** Set Root Directory to `frontend-nextjs` (not blank!)
+  - This tells Vercel where package.json is located
+  - Without this, you'll get "No Next.js version detected" error
+- [ ] Framework should auto-detect as Next.js
 - [ ] Add environment variables:
   - [ ] NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
   - [ ] NEXT_PUBLIC_API_BASE_PATH=/api/v1

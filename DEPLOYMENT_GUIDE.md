@@ -141,14 +141,20 @@ Before deploying, you need your backend URL from Part 1.
    - Click "Import"
 
 3. **Configure Project**
+   
+   **IMPORTANT: Set Root Directory to `frontend-nextjs`**
+   
    ```
    Framework Preset: Next.js
-   Root Directory: frontend-nextjs
-   Build Command: npm run build
+   Root Directory: frontend-nextjs  ⚠️ REQUIRED - This is where package.json is located
+   Build Command: (leave default or use: npm run build)
    Output Directory: (leave default)
-   Install Command: npm install
-   Development Command: npm run dev
+   Install Command: (leave default or use: npm install)
+   Development Command: (leave default or use: npm run dev)
    ```
+   
+   **Why this matters:** Your Next.js app is in the `frontend-nextjs` subdirectory, not the root.
+   Vercel needs to know where to find package.json.
 
 4. **Add Environment Variables**
    
@@ -406,6 +412,23 @@ console.log(process.env.NEXT_PUBLIC_API_URL)
 # - Check build logs in Vercel
 # - Verify root directory is "frontend-nextjs"
 # - Run "npm run build" locally to test
+```
+
+#### Next.js Version Not Detected
+```bash
+# Error: "No Next.js version detected. Make sure your package.json..."
+# This means Vercel is looking in the wrong directory
+
+# Solution:
+# 1. Go to Project Settings → General
+# 2. Set "Root Directory" to: frontend-nextjs
+# 3. Click "Save"
+# 4. Redeploy: Deployments → click "..." → Redeploy
+
+# Verify locally:
+cd frontend-nextjs
+cat package.json | grep "next"
+# Should show: "next": "16.1.5"
 ```
 
 #### Environment Variables Not Working
