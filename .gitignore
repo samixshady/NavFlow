@@ -190,29 +190,35 @@ cython_debug/
 # Next.js / Node.js Frontend
 # ============================================
 
-# Node.js dependencies
+# Node.js dependencies (IGNORED - reinstall with npm install)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-pnpm-lock.yaml
-yarn.lock
-package-lock.json
 
-# Next.js build output
+# KEEP package lock files for reproducible installs
+# !package-lock.json
+# !yarn.lock
+# !pnpm-lock.yaml
+
+# Next.js build output (IGNORED - generated at build time)
 .next/
 out/
 *.tsbuildinfo
-dist/
+.turbo/
 
-# Environment variables
+# Frontend node_modules (IGNORED - reinstall with npm install)
+frontend-nextjs/node_modules/
+
+# Environment variables (IGNORED - use .env.example as template)
 .env.local
 .env.*.local
 
-# Keep production example for deployment reference
-!.env.production
-!frontend-nextjs/.env.production
+# Keep example files for reference (DO NOT IGNORE)
+!.env.example
+!.env.production.example
+!frontend-nextjs/.env.example
 
 # IDE and editor
 .vscode/
@@ -230,10 +236,3 @@ Thumbs.db
 
 # Build directories
 build/
-.turbo/
-
-# Frontend directories
-frontend-nextjs/node_modules/
-frontend-nextjs/.next/
-frontend-nextjs/out/
-frontend-nextjs/dist/
