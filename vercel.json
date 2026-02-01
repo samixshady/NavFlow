@@ -1,4 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "devCommand": "next dev",
+  
+  "root": "frontend-nextjs",
+  
+  "env": {
+    "NEXT_PUBLIC_API_BASE_URL": {
+      "value": "http://localhost:8000/api/v1"
+    }
+  },
+  
+  "nodeVersion": "24.x"
 }
