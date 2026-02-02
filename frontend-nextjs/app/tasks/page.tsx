@@ -1047,7 +1047,7 @@ export default function TasksPage() {
           </div>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">New Task</span>
@@ -1385,7 +1385,7 @@ export default function TasksPage() {
               )}
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-xl transition-all"
               >
                 <Plus className="w-5 h-5" />
                 Create Task
@@ -1760,7 +1760,7 @@ export default function TasksPage() {
               <button
                 type="submit"
                 onClick={handleCreateTask}
-                className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+                className="flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
               >
                 Create Task
               </button>
@@ -2127,7 +2127,7 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
+                  className="px-8 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
                 >
                   Save Changes
                 </button>

@@ -229,7 +229,7 @@ export default function Dashboard() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">No projects yet</p>
               <Link
                 href="/projects"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Create your first project

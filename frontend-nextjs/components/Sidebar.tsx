@@ -111,7 +111,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
-                  style={isActive ? { backgroundColor: '#bb69fa7a', boxShadow: '0 10px 15px -3px rgba(166, 133, 224, 0.3)' } : undefined}
+                  style={isActive ? { backgroundColor: '#bb69faa1', boxShadow: '0 10px 15px -3px rgba(166, 133, 224, 0.3)' } : undefined}
                 >
                   <Icon 
                     className={`w-5 h-5 ${

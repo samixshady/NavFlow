@@ -265,7 +265,7 @@ export default function FocusModePage() {
               </p>
               <button
                 onClick={() => router.push('/tasks')}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white rounded-lg transition-all flex items-center gap-2 mx-auto"
               >
                 <Plus className="w-5 h-5" />
                 Browse Tasks

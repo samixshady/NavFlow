@@ -175,7 +175,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <button className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+              <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
                 <Save className="w-5 h-5" />
                 Save Changes
               </button>
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <button className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+              <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
                 <Shield className="w-5 h-5" />
                 Update Password
               </button>
@@ -277,7 +277,7 @@ export default function SettingsPage() {
               ))}
             </div>
 
-            <button className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+            <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
               <Save className="w-5 h-5" />
               Save Preferences
             </button>

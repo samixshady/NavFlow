@@ -589,7 +589,7 @@ export default function OrganizationsPage() {
           </button>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
           >
             <Plus className="w-5 h-5" />
             New Organization
@@ -665,7 +665,7 @@ export default function OrganizationsPage() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all"
           >
             <Plus className="w-5 h-5" />
             Create Organization
@@ -792,7 +792,7 @@ export default function OrganizationsPage() {
               <button
                 type="submit"
                 onClick={handleCreateOrg}
-                className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+                className="flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
               >
                 Create Organization
               </button>
