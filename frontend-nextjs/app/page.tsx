@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User, AtSign } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
+import Landing from '@/app/landing/Landing';
 
 export default function Home() {
   const router = useRouter();
@@ -204,66 +205,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative bg-black font-['Inter'] text-white flex items-center justify-center overflow-x-hidden">
-      {/* Enhanced Gradient Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Gradient Spheres with animations */}
-        <div 
-          className="absolute w-[40vw] h-[40vw] rounded-full opacity-80 animate-sphere-1"
-          style={{
-            background: 'linear-gradient(40deg, rgba(255, 0, 128, 0.8), rgba(255, 102, 0, 0.4))',
-            filter: 'blur(60px)',
-            top: '-10%',
-            left: '-10%'
-          }}
-        ></div>
-        
-        <div 
-          className="absolute w-[45vw] h-[45vw] rounded-full opacity-80 animate-sphere-2"
-          style={{
-            background: 'linear-gradient(240deg, rgba(72, 0, 255, 0.8), rgba(0, 183, 255, 0.4))',
-            filter: 'blur(60px)',
-            bottom: '-20%',
-            right: '-10%'
-          }}
-        ></div>
-        
-        <div 
-          className="absolute w-[30vw] h-[30vw] rounded-full opacity-50 animate-sphere-3"
-          style={{
-            background: 'linear-gradient(120deg, rgba(133, 89, 255, 0.5), rgba(98, 216, 249, 0.3))',
-            filter: 'blur(60px)',
-            top: '60%',
-            left: '20%'
-          }}
-        ></div>
-
-        {/* Central Glow */}
-        <div 
-          className="absolute w-[40vw] h-[40vh] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-2 animate-pulse-glow"
-          style={{
-            background: 'radial-gradient(circle, rgba(72, 0, 255, 0.15), transparent 70%)',
-            filter: 'blur(30px)'
-          }}
-        ></div>
-
-        {/* Grid Overlay */}
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundSize: '40px 40px',
-            backgroundImage: 
-              'linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)'
-          }}
-        ></div>
-
-        {/* Noise Overlay */}
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")"
-          }}
-        ></div>
-      </div>
+      {/* Landing Background Component */}
+      <Landing />
 
       {/* Content Container */}
       <div className="relative z-10 w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
