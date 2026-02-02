@@ -215,7 +215,7 @@ export default function Home() {
         <div className="flex-shrink-0 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 lg:mb-8">
           <p className="text-lg sm:text-xl lg:text-lg font-medium text-gray-300 whitespace-nowrap">
             Made by{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold">
+            <span className="font-semibold" style={{ color: '#9662f7' }}>
               Sami
             </span>
           </p>
@@ -250,7 +250,7 @@ export default function Home() {
           <div className="text-center lg:text-left">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-4 lg:mb-6">
               <span className="text-white drop-shadow-lg">Nav</span>
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Flow</span>
+              <span style={{ color: '#9662f7' }}>Flow</span>
             </h1>
             
             {/* Project Description */}
@@ -269,7 +269,8 @@ export default function Home() {
               {/* Read More Button */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-purple-500/25"
+                className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+                style={{ backgroundColor: '#9662f7', boxShadow: '0 0 20px rgba(183, 166, 214, 0.3)' }}
               >
                 Read More
                 <ArrowRight className="w-5 h-5" />
@@ -299,9 +300,10 @@ export default function Home() {
                 }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                   isLogin 
-                    ? 'bg-white/10 text-white shadow-md' 
+                    ? 'text-white shadow-md' 
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
+                style={isLogin ? { backgroundColor: '#9662f7' } : {}}
               >
                 Sign In
               </button>
@@ -315,9 +317,10 @@ export default function Home() {
                 }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                   !isLogin 
-                    ? 'bg-white/10 text-white shadow-md' 
+                    ? 'text-white shadow-md' 
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
+                style={!isLogin ? { backgroundColor: '#9662f7'} : {}}
               >
                 Sign Up
               </button>
@@ -571,7 +574,10 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2 px-4 text-sm bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-4"
+                  className="w-full py-2 px-4 text-sm text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-4"
+                  style={{
+                    backgroundColor: loading ? '#9662f7' : '#9662f7',
+                  }}
                 >
                   {loading ? 'Creating account...' : 'Create Account'}
                 </button>
