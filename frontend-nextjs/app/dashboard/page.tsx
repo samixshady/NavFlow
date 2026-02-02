@@ -30,10 +30,19 @@ interface Project {
   created_at: string;
 }
 
+interface UserProfile {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     projectCount: 0,
     taskCount: 0,
@@ -55,6 +64,10 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
+      
+      // Fetch user profile
+      const profileRes = await api.get('/accounts/profile/');
+      setUserProfile(profileRes.data);
       
       // Fetch projects (handle paginated response)
       const projectsRes = await api.get('/projects/');
@@ -113,7 +126,7 @@ export default function Dashboard() {
       {/* Welcome Section */}
       <div className="mb-6 flex-shrink-0">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome back{user?.first_name ? `, ${user.first_name}` : ''}! 👋
+          Welcome back{userProfile?.first_name ? `, ${userProfile.first_name}` : ''}!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Here's what's happening with your projects today
