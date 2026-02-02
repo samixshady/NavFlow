@@ -398,9 +398,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   return (
     <>
       <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 transition-colors duration-300">
-      <div className="h-full px-4 lg:px-8 max-w-[1920px] mx-auto flex items-center justify-between">
+      <div className="h-full px-6 lg:px-16 xl:px-24 max-w-[1600px] mx-auto flex items-center justify-between gap-6">
         {/* Left Section */}
-        <div className="flex items-center space-x-3 flex-1">
+        <div className="flex items-center space-x-3 flex-1 max-w-2xl">
           {/* Mobile Menu Button */}
           <button
             onClick={onMenuClick}
@@ -410,9 +410,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </button>
 
           {/* Search Bar - Desktop */}
-          <div className="hidden md:flex items-center flex-1 max-w-md" ref={searchRef}>
+          <div className="hidden md:flex items-center flex-1" ref={searchRef}>
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors" />
+              </div>
               <input
                 ref={searchInputRef}
                 type="text"
@@ -420,10 +422,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => searchTerm && setIsSearchOpen(true)}
-                className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
+                className="w-full h-9 pl-10 pr-10 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
               />
               {isSearching && (
-                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 text-purple-500 dark:text-purple-400 animate-spin" />
+                </div>
               )}
               {!isSearching && searchTerm && (
                 <button
@@ -432,7 +436,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     setIsSearchOpen(false);
                     searchInputRef.current?.focus();
                   }}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -574,19 +579,39 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </div>
         </div>
 
+        {/* Mobile Search Bar */}
+        <div className="md:hidden flex-1 max-w-xs">
+          <div className="relative w-full">
+            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Search className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => searchTerm && setIsSearchOpen(true)}
+              className="w-full h-8 pl-8 pr-8 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setIsSearchOpen(false);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Right Section */}
         <div className="flex items-center space-x-2">
           {/* Mobile Icons */}
           <div className="flex md:hidden items-center space-x-1">
-            {/* Mobile Search */}
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
-
             {/* Mobile Theme Toggle */}
             <button
               onClick={toggleTheme}
