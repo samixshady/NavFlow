@@ -565,9 +565,9 @@ export default function OrganizationsPage() {
         </div>
       )}
 
-      <div className="flex flex-col min-h-0 flex-1">
+      <div>
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Organizations
@@ -653,7 +653,7 @@ export default function OrganizationsPage() {
       )}
 
       {/* Organizations Grid */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div>
       {filteredOrganizations.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <Building2 className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
@@ -688,10 +688,10 @@ export default function OrganizationsPage() {
                   {org.user_role}
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors break-words">
                 {org.name}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2 break-words overflow-hidden">
                 {org.description || 'No description'}
               </p>
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -804,11 +804,11 @@ export default function OrganizationsPage() {
       {/* Organization Detail Modal */}
       {isDetailModalOpen && selectedOrg && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6 shadow-2xl my-8">
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-2 -mt-2 pt-2 z-10">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedOrg.name}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedOrg.description || 'No description'}</p>
+              <div className="flex-1 min-w-0 mr-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white break-words">{selectedOrg.name}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words">{selectedOrg.description || 'No description'}</p>
               </div>
               <button
                 onClick={() => {
@@ -833,8 +833,8 @@ export default function OrganizationsPage() {
             )}
 
             {/* Organization Info Badge */}
-            <div className="mb-6 flex items-center gap-4 text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Owner: {selectedOrg.owner_email}</span>
+            <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
+              <span className="text-gray-600 dark:text-gray-400 break-words">Owner: {selectedOrg.owner_email}</span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedOrg.user_role)}`}>
                 {getRoleIcon(selectedOrg.user_role)}
                 Your role: {selectedOrg.user_role}
@@ -850,7 +850,7 @@ export default function OrganizationsPage() {
                     const inviteSection = document.getElementById('invite-section');
                     inviteSection?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 hover:from-purple-600 hover:via-purple-700 hover:to-pink-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="group relative overflow-hidden bg-green-600 hover:bg-green-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -892,7 +892,7 @@ export default function OrganizationsPage() {
                     setError('Manage Permissions functionality coming soon!');
                     setTimeout(() => setError(''), 2000);
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-600 hover:from-amber-600 hover:via-orange-600 hover:to-yellow-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -1148,7 +1148,7 @@ export default function OrganizationsPage() {
                     <div className="space-y-2">
                       {orgInvitations.map((inv) => (
                         <div key={inv.id} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg text-sm">
-                          <span className="text-gray-700 dark:text-gray-300">
+                          <span className="text-gray-700 dark:text-gray-300 break-words flex-1 min-w-0 mr-2">
                             {inv.invited_user_username} ({inv.role_display})
                           </span>
                           <span className="text-xs text-gray-500">Pending</span>
@@ -1166,20 +1166,20 @@ export default function OrganizationsPage() {
                 <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 Members ({members.length})
               </h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2">
                 {members.map((member) => (
                   <div
                     key={member.user_email}
                     className="relative flex items-center justify-between p-4 rounded-xl border-2 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 transition-all duration-200"
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
                           {member.user_name.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{member.user_name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white break-words overflow-hidden">{member.user_name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 break-words overflow-hidden">{member.user_email}</p>
                         </div>
                       </div>
                     </div>

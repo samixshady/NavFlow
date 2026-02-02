@@ -460,6 +460,9 @@ export default function TasksPage() {
       if (taskEstimatedHours) {
         taskData.estimated_hours = parseFloat(taskEstimatedHours);
       }
+      if (taskAssignee) {
+        taskData.assigned_to = taskAssignee;
+      }
 
       await api.post('/tasks/', taskData);
       setSuccess('Task created successfully!');
@@ -479,6 +482,8 @@ export default function TasksPage() {
     setTaskPriority('medium');
     setTaskDueDate('');
     setTaskEstimatedHours('');
+    setTaskAssignee(null);
+    setProjectMembers([]);
   };
 
   const openTaskDetail = async (task: Task) => {
@@ -1589,19 +1594,39 @@ export default function TasksPage() {
               )}
 
               <form onSubmit={handleCreateTask} className="space-y-6">
-                {/* Project Selection */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Folder className="w-5 h-5 text-purple-500" />
-                    Project *
-                  </label>
+                {/* Two Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Project Selection */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Folder className="w-5 h-5 text-purple-500" />
+                        Project *
+                      </label>
                   <select
                     value={selectedProjectId}
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       setSelectedProjectId(e.target.value);
                       setTaskSection(null);
+                      setTaskAssignee(null);
+                      setProjectMembers([]);
                       if (e.target.value) {
                         fetchSections(parseInt(e.target.value));
+                        // Fetch project members for assignment
+                        try {
+                          const response = await api.get(`/projects/${e.target.value}/members/`);
+                          const members = response.data
+                            .filter((m: any) => m.user_id)
+                            .map((m: any) => ({
+                              id: m.user_id,
+                              email: m.user_email,
+                              name: m.user_name || m.user_email
+                            }));
+                          setProjectMembers(members);
+                        } catch (error) {
+                          console.error('Error fetching project members:', error);
+                        }
                       }
                     }}
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
@@ -1614,39 +1639,115 @@ export default function TasksPage() {
                       </option>
                     ))}
                   </select>
-                </div>
+                    </div>
                 
-                {/* Task Title */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5 text-purple-500" />
-                    Task Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder="What needs to be done?"
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                    required
-                  />
-                </div>
-                
-                {/* Description */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Edit className="w-5 h-5 text-purple-500" />
-                    Description
-                  </label>
-                  <textarea
-                    value={taskDescription}
-                    onChange={(e) => setTaskDescription(e.target.value)}
-                    placeholder="Add more details about this task..."
-                    rows={4}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
-                  />
-                </div>
-                
+                    {/* Task Title */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <CheckSquare className="w-5 h-5 text-purple-500" />
+                        Task Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={taskTitle}
+                        onChange={(e) => setTaskTitle(e.target.value)}
+                        placeholder="What needs to be done?"
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                        required
+                      />
+                    </div>
+                    
+                    {/* Priority */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Flag className="w-5 h-5 text-purple-500" />
+                        Priority
+                      </label>
+                      <select
+                        value={taskPriority}
+                        onChange={(e) => setTaskPriority(e.target.value as any)}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                      >
+                        <option value="low">🟢 Low Priority</option>
+                        <option value="medium">🟡 Medium Priority</option>
+                        <option value="high">🟠 High Priority</option>
+                        <option value="urgent">🔴 Urgent</option>
+                      </select>
+                    </div>
+                    
+                    {/* Due Date */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-purple-500" />
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={taskDueDate}
+                        onChange={(e) => setTaskDueDate(e.target.value)}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                      />
+                    </div>
+                    
+                    {/* Estimated Hours */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-purple-500" />
+                        Estimated Hours
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={taskEstimatedHours}
+                        onChange={(e) => setTaskEstimatedHours(e.target.value)}
+                        placeholder="e.g. 4"
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Description */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Edit className="w-5 h-5 text-purple-500" />
+                        Description
+                      </label>
+                      <textarea
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        placeholder="Add more details about this task..."
+                        rows={4}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
+                      />
+                    </div>
+                    
+                    {/* Assign To */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <UserIcon className="w-5 h-5 text-purple-500" />
+                        Assign To
+                      </label>
+                      <select
+                        value={taskAssignee || ''}
+                        onChange={(e) => setTaskAssignee(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                        disabled={!selectedProjectId}
+                      >
+                        <option value="">Unassigned</option>
+                        {projectMembers.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
+                      {!selectedProjectId && (
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Select a project first to assign members</p>
+                      )}
+                    </div>
+                    
                 {/* Section/Label Selection */}
                 {sections.length > 0 && (
                   <div>
@@ -1692,55 +1793,8 @@ export default function TasksPage() {
                   </div>
                 </div>
               )}
-              
-              {/* Priority and Due Date */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Flag className="w-5 h-5 text-purple-500" />
-                    Priority
-                  </label>
-                  <select
-                    value={taskPriority}
-                    onChange={(e) => setTaskPriority(e.target.value as any)}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                  >
-                    <option value="low">🟢 Low Priority</option>
-                    <option value="medium">🟡 Medium Priority</option>
-                    <option value="high">🟠 High Priority</option>
-                    <option value="urgent">🔴 Urgent</option>
-                  </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-purple-500" />
-                    Due Date
-                  </label>
-                  <input
-                    type="date"
-                    value={taskDueDate}
-                    onChange={(e) => setTaskDueDate(e.target.value)}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                  />
-                </div>
-              </div>
-
-              {/* Estimated Hours */}
-              <div>
-                <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-purple-500" />
-                  Estimated Hours
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={taskEstimatedHours}
-                  onChange={(e) => setTaskEstimatedHours(e.target.value)}
-                  placeholder="e.g. 4"
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                />
-              </div>
             </form>
             </div>
 

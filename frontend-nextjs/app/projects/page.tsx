@@ -435,7 +435,7 @@ export default function ProjectsPage() {
       {/* Create Project Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
               <div>
@@ -467,57 +467,65 @@ export default function ProjectsPage() {
                 </div>
               )}
 
-              <form onSubmit={handleCreateProject} className="space-y-6">
-                {/* Organization Selection */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-purple-500" />
-                    Organization
-                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400">(Optional - for personal projects, leave blank)</span>
-                  </label>
-                  <select
-                    value={selectedOrgId}
-                    onChange={(e) => setSelectedOrgId(e.target.value)}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                  >
-                    <option value="">Personal Project (No Organization)</option>
-                    {organizations.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <form onSubmit={handleCreateProject}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Organization Selection */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-purple-500" />
+                        Organization
+                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
+                      </label>
+                      <select
+                        value={selectedOrgId}
+                        onChange={(e) => setSelectedOrgId(e.target.value)}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                      >
+                        <option value="">Personal Project (No Organization)</option>
+                        {organizations.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                {/* Project Name */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Folder className="w-5 h-5 text-purple-500" />
-                    Project Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="Enter project name"
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                    required
-                  />
-                </div>
+                    {/* Project Name */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Folder className="w-5 h-5 text-purple-500" />
+                        Project Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={projectName}
+                        onChange={(e) => setProjectName(e.target.value)}
+                        placeholder="Enter project name"
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
+                        required
+                      />
+                    </div>
+                  </div>
 
-                {/* Project Description */}
-                <div>
-                  <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Edit className="w-5 h-5 text-purple-500" />
-                    Description
-                  </label>
-                  <textarea
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
-                    placeholder="Enter project description"
-                    rows={5}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
-                  />
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Project Description */}
+                    <div>
+                      <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <Edit className="w-5 h-5 text-purple-500" />
+                        Description
+                      </label>
+                      <textarea
+                        value={projectDescription}
+                        onChange={(e) => setProjectDescription(e.target.value)}
+                        placeholder="Enter project description"
+                        rows={10}
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none text-base"
+                      />
+                    </div>
+                  </div>
                 </div>
               </form>
             </div>
@@ -603,21 +611,21 @@ export default function ProjectsPage() {
                 <>
                   <button
                     onClick={openAssignMemberModal}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-xl transition-all"
                   >
                     <UserPlus className="w-5 h-5" />
                     Assign Members
                   </button>
                   <button
                     onClick={() => setIsManageRolesModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-xl transition-all"
                   >
                     <Shield className="w-5 h-5" />
                     Manage Roles
                   </button>
                   <button
                     onClick={() => setIsRemoveMembersModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-50/50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 hover:bg-red-100/70 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 font-medium rounded-xl transition-all"
                   >
                     <UserMinus className="w-5 h-5" />
                     Remove Members
