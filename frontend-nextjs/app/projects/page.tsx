@@ -558,7 +558,7 @@ export default function ProjectsPage() {
       {/* Project Detail Modal */}
       {isDetailModalOpen && selectedProject && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl my-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full p-8 shadow-2xl my-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedProject.name}</h2>
               <button
@@ -583,54 +583,58 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            {/* Project Info */}
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <strong>Organization:</strong> {selectedProject.organization_name}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {selectedProject.description || 'No description'}
-              </p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                <span>Owner: {selectedProject.owner_email}</span>
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedProject.user_role)}`}>
-                  {getRoleIcon(selectedProject.user_role)}
-                  Your role: {selectedProject.user_role}
-                </span>
+            {/* Project Info and Actions Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Project Info Card */}
+              <div className="lg:col-span-2 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <strong>Organization:</strong> {selectedProject.organization_name}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {selectedProject.description || 'No description'}
+                </p>
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span>Owner: {selectedProject.owner_email}</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedProject.user_role)}`}>
+                    {getRoleIcon(selectedProject.user_role)}
+                    Your role: {selectedProject.user_role}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  <span>{selectedProject.member_count} members</span>
+                  <span>{selectedProject.task_count} tasks</span>
+                  <span>Status: {selectedProject.status}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
-                <span>{selectedProject.member_count} members</span>
-                <span>{selectedProject.task_count} tasks</span>
-                <span>Status: {selectedProject.status}</span>
-              </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="mb-6 grid grid-cols-3 gap-3">
+              {/* Actions Card */}
               {(selectedProject.user_role === 'owner' || selectedProject.user_role === 'admin') && (
-                <>
-                  <button
-                    onClick={openAssignMemberModal}
-                    className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-xl transition-all"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    Assign Members
-                  </button>
-                  <button
-                    onClick={() => setIsManageRolesModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-xl transition-all"
-                  >
-                    <Shield className="w-5 h-5" />
-                    Manage Roles
-                  </button>
-                  <button
-                    onClick={() => setIsRemoveMembersModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-50/50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 hover:bg-red-100/70 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 font-medium rounded-xl transition-all"
-                  >
-                    <UserMinus className="w-5 h-5" />
-                    Remove Members
-                  </button>
-                </>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
+                  <div className="space-y-4">
+                    <button
+                      onClick={openAssignMemberModal}
+                      className="cursor-pointer w-full inline-flex items-center justify-center gap-3 px-5 py-4 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg transition-all text-base"
+                    >
+                      <UserPlus className="w-6 h-6" />
+                      Assign Members
+                    </button>
+                    <button
+                      onClick={() => setIsManageRolesModalOpen(true)}
+                      className="cursor-pointer w-full inline-flex items-center justify-center gap-3 px-5 py-4 bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-lg transition-all text-base"
+                    >
+                      <Shield className="w-6 h-6" />
+                      Manage Roles
+                    </button>
+                    <button
+                      onClick={() => setIsRemoveMembersModalOpen(true)}
+                      className="cursor-pointer w-full inline-flex items-center justify-center gap-3 px-5 py-4 bg-red-50/50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 hover:bg-red-100/70 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 font-medium rounded-lg transition-all text-base"
+                    >
+                      <UserMinus className="w-6 h-6" />
+                      Remove Members
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
