@@ -25,6 +25,7 @@ import {
   Check,
   Loader2
 } from 'lucide-react';
+import { FaBell, FaUser, FaMoon, FaSun } from "react-icons/fa";
 import { useTheme } from '@/lib/theme-context';
 import { useAuthStore } from '@/lib/store';
 import api from '@/lib/api';
@@ -395,10 +396,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 transition-colors duration-300">
-      <div className="h-full px-4 flex items-center justify-between">
+    <>
+      <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 transition-colors duration-300">
+      <div className="h-full px-4 lg:px-8 max-w-[1920px] mx-auto flex items-center justify-between">
         {/* Left Section */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 flex-1">
           {/* Mobile Menu Button */}
           <button
             onClick={onMenuClick}
@@ -407,7 +409,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             <Menu className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
 
-          {/* Search Bar */}
+          {/* Search Bar - Desktop */}
           <div className="hidden md:flex items-center flex-1 max-w-md" ref={searchRef}>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -574,35 +576,100 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
         {/* Right Section */}
         <div className="flex items-center space-x-2">
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 group"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-yellow-500 group-hover:rotate-180 transition-transform duration-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-600 group-hover:rotate-180 transition-transform duration-500" />
-            )}
-          </button>
-
-          {/* Notifications */}
-          <div className="relative" ref={notificationRef}>
-            <button 
-              onClick={() => {
-                setIsNotificationsOpen(!isNotificationsOpen);
-                if (!isNotificationsOpen) fetchNotifications();
-              }}
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+          {/* Mobile Icons */}
+          <div className="flex md:hidden items-center space-x-1">
+            {/* Mobile Search */}
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Search"
             >
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+              <Search className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+
+            {/* Mobile Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <FaSun className="w-4 h-4 text-yellow-500" />
+              ) : (
+                <FaMoon className="w-4 h-4 text-gray-600" />
               )}
             </button>
+
+            {/* Mobile Notifications */}
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                  if (!isNotificationsOpen) fetchNotifications();
+                }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Notifications"
+              >
+                <FaBell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Mobile Profile */}
+            <button 
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Profile"
+            >
+              <FaUser className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex items-center space-x-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="styled-btn group"
+              aria-label="Toggle theme"
+            >
+              <span className="btn-text">
+                {theme === 'dark' ? 'Light' : 'Dark'}
+              </span>
+              <span className="btn-icon">
+                {theme === 'dark' ? (
+                  <FaSun size={14} />
+                ) : (
+                  <FaMoon size={14} />
+                )}
+              </span>
+            </button>
+
+            {/* Notifications */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                  if (!isNotificationsOpen) fetchNotifications();
+                }}
+                className="styled-btn group"
+              >
+                <span className="btn-text">
+                  Alerts
+                </span>
+                <span className="btn-icon relative">
+                  <FaBell size={14} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </span>
+              </button>
 
             {/* Notifications Dropdown */}
             {isNotificationsOpen && (
@@ -714,28 +781,21 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </div>
               </div>
             )}
-          </div>
+            </div>
 
-          {/* Profile */}
-          <div className="relative" ref={profileRef}>
-            <button 
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              {profile?.avatar ? (
-                <img 
-                  src={profile.avatar} 
-                  alt={profile.full_name}
-                  className="w-9 h-9 rounded-full object-cover ring-2 ring-transparent group-hover:ring-purple-500 transition-all"
-                />
-              ) : (
-                <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform ring-2 ring-transparent group-hover:ring-purple-300">
-                  <span className="text-white font-semibold text-sm">
-                    {profile?.initials || 'U'}
-                  </span>
-                </div>
-              )}
-            </button>
+            {/* Profile */}
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="styled-btn group"
+              >
+                <span className="btn-text">
+                  Profile
+                </span>
+                <span className="btn-icon">
+                  <FaUser size={14} />
+                </span>
+              </button>
 
             {/* Profile Dropdown */}
             {isProfileOpen && (
@@ -829,9 +889,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
+      </header>
 
       {/* Edit Profile Modal */}
       {isEditProfileOpen && (
@@ -1069,6 +1131,93 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </div>
         </div>
       )}
-    </header>
+
+      {/* Button Styles */}
+      <style jsx>{`
+        .styled-btn {
+          width: 120px;
+          height: 35px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          border: 1px solid rgba(209, 213, 219, 0.5);
+          border-radius: 8px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: transparent;
+        }
+
+        .btn-text {
+          width: 65%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #4b5563;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          background: transparent;
+        }
+
+        .btn-icon {
+          width: 35%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #6b7280;
+          transition: all 0.3s ease;
+          position: relative;
+          background: transparent;
+          border-left: 1px solid rgba(209, 213, 219, 0.5);
+        }
+
+        .styled-btn:hover {
+          background-color: rgba(243, 244, 246, 0.8);
+          border-color: rgba(156, 163, 175, 0.8);
+        }
+
+        .styled-btn:hover .btn-text {
+          color: #1f2937;
+        }
+
+        .styled-btn:hover .btn-icon {
+          color: #374151;
+        }
+
+        .styled-btn:active {
+          transform: scale(0.98);
+        }
+
+        /* Dark mode adjustments */
+        :global(.dark) .styled-btn {
+          border-color: rgba(75, 85, 99, 0.5);
+        }
+
+        :global(.dark) .btn-text {
+          color: #9ca3af;
+        }
+
+        :global(.dark) .btn-icon {
+          color: #9ca3af;
+          border-left-color: rgba(75, 85, 99, 0.5);
+        }
+
+        :global(.dark) .styled-btn:hover {
+          background-color: rgba(55, 65, 81, 0.5);
+          border-color: rgba(107, 114, 128, 0.8);
+        }
+
+        :global(.dark) .styled-btn:hover .btn-text {
+          color: #d1d5db;
+        }
+
+        :global(.dark) .styled-btn:hover .btn-icon {
+          color: #d1d5db;
+        }
+      `}</style>
+    </>
   );
 }
