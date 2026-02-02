@@ -107,10 +107,11 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
                     flex items-center space-x-3 px-4 py-3 rounded-lg
                     transition-all duration-200 group
                     ${isActive
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50'
+                      ? 'text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
+                  style={isActive ? { backgroundColor: '#bb69fa7a', boxShadow: '0 10px 15px -3px rgba(166, 133, 224, 0.3)' } : undefined}
                 >
                   <Icon 
                     className={`w-5 h-5 ${
