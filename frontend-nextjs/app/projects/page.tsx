@@ -126,17 +126,23 @@ export default function ProjectsPage() {
     setError('');
     setSuccess('');
 
-    if (!projectName.trim() || !selectedOrgId) {
-      setError('Project name and organization are required');
+    if (!projectName.trim()) {
+      setError('Project name is required');
       return;
     }
 
     try {
-      await api.post('/projects/', {
+      const projectData: any = {
         name: projectName,
         description: projectDescription,
-        organization_id: parseInt(selectedOrgId),
-      });
+      };
+      
+      // Only include organization_id if one is selected
+      if (selectedOrgId) {
+        projectData.organization_id = parseInt(selectedOrgId);
+      }
+      
+      await api.post('/projects/', projectData);
       setSuccess('Project created successfully!');
       setProjectName('');
       setProjectDescription('');
@@ -466,15 +472,15 @@ export default function ProjectsPage() {
                 <div>
                   <label className="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-purple-500" />
-                    Organization *
+                    Organization
+                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400">(Optional - for personal projects, leave blank)</span>
                   </label>
                   <select
                     value={selectedOrgId}
                     onChange={(e) => setSelectedOrgId(e.target.value)}
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-base"
-                    required
                   >
-                    <option value="">Select an organization</option>
+                    <option value="">Personal Project (No Organization)</option>
                     {organizations.map((org) => (
                       <option key={org.id} value={org.id}>
                         {org.name}
