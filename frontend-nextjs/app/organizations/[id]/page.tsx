@@ -272,7 +272,7 @@ export default function OrganizationDetailPage() {
           <div className="text-center">
             <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Organization not found</h2>
-            <Link href="/organizations" className="text-purple-600 hover:text-purple-700">
+            <Link href="/organizations" className="cursor-pointer text-purple-600 hover:text-purple-700">
               Back to organizations
             </Link>
           </div>
@@ -313,7 +313,7 @@ export default function OrganizationDetailPage() {
       <div className="mb-6 flex-shrink-0">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <Link href="/organizations" className="hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1">
+          <Link href="/organizations" className="cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" />
             Organizations
           </Link>
@@ -349,7 +349,7 @@ export default function OrganizationDetailPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={handleSaveEdit}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                       >
                         <Save className="w-4 h-4" />
                         Save
@@ -406,14 +406,14 @@ export default function OrganizationDetailPage() {
                   <>
                     <button
                       onClick={() => setShowInviteModal(true)}
-                      className="w-full inline-flex items-center gap-2 px-4 py-3 bg-green-50/50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 hover:bg-green-100/70 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 font-medium rounded-lg transition-all"
+                      className="cursor-pointer w-full inline-flex items-center gap-2 px-4 py-3 bg-green-50/50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 hover:bg-green-100/70 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 font-medium rounded-lg transition-all"
                     >
                       <UserPlus className="w-5 h-5" />
                       <span>Invite Member</span>
                     </button>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="w-full inline-flex items-center gap-2 px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-lg transition-all"
+                      className="cursor-pointer w-full inline-flex items-center gap-2 px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-lg transition-all"
                     >
                       <Edit className="w-5 h-5" />
                       <span>Edit Organization</span>
@@ -424,14 +424,14 @@ export default function OrganizationDetailPage() {
                   <>
                     <Link
                       href={`/organizations/permissions?org=${orgId}`}
-                      className="w-full inline-flex items-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg transition-all"
+                      className="cursor-pointer w-full inline-flex items-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg transition-all"
                     >
                       <Shield className="w-5 h-5" />
                       <span>Manage Permissions</span>
                     </Link>
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="w-full inline-flex items-center gap-2 px-4 py-3 bg-red-50/50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 hover:bg-red-100/70 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 font-medium rounded-lg transition-all"
+                      className="cursor-pointer w-full inline-flex items-center gap-2 px-4 py-3 bg-red-50/50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 hover:bg-red-100/70 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 font-medium rounded-lg transition-all"
                     >
                       <Trash2 className="w-5 h-5" />
                       <span>Delete Organization</span>
@@ -541,7 +541,7 @@ export default function OrganizationDetailPage() {
                     <Link
                       key={project.id}
                       href={`/projects?id=${project.id}`}
-                      className="block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="cursor-pointer block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -646,7 +646,7 @@ export default function OrganizationDetailPage() {
               {isAdmin && (
                 <Link
                   href="/projects"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                  className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                 >
                   <Folder className="w-4 h-4" />
                   Create Project
@@ -660,7 +660,7 @@ export default function OrganizationDetailPage() {
                 {isAdmin && (
                   <Link
                     href="/projects"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                   >
                     Create your first project
                   </Link>
@@ -672,7 +672,7 @@ export default function OrganizationDetailPage() {
                   <Link
                     key={project.id}
                     href={`/projects?id=${project.id}`}
-                    className="block p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all group"
+                    className="cursor-pointer block p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all group"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -854,7 +854,7 @@ export default function OrganizationDetailPage() {
               <button
                 onClick={handleDeleteOrganization}
                 disabled={deleteConfirmText !== organization.name}
-                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                className="cursor-pointer flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
               >
                 Delete Organization
               </button>
@@ -931,7 +931,7 @@ export default function OrganizationDetailPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                  className="cursor-pointer flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                 >
                   Send Invitation
                 </button>

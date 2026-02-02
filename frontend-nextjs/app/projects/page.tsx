@@ -349,7 +349,7 @@ export default function ProjectsPage() {
         </div>
         <button 
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+          className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
         >
           <Plus className="w-5 h-5" />
           New Project
@@ -383,7 +383,7 @@ export default function ProjectsPage() {
           </p>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all"
+            className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all"
           >
             <Plus className="w-5 h-5" />
             Create Project
@@ -546,7 +546,7 @@ export default function ProjectsPage() {
               <button
                 type="submit"
                 onClick={handleCreateProject}
-                className="flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+                className="cursor-pointer flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
               >
                 Create Project
               </button>
@@ -611,7 +611,7 @@ export default function ProjectsPage() {
                 <>
                   <button
                     onClick={openAssignMemberModal}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-xl transition-all"
+                    className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-3 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-xl transition-all"
                   >
                     <UserPlus className="w-5 h-5" />
                     Assign Members

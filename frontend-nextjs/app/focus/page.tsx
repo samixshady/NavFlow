@@ -265,7 +265,7 @@ export default function FocusModePage() {
               </p>
               <button
                 onClick={() => router.push('/tasks')}
-                className="px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white rounded-lg transition-all flex items-center gap-2 mx-auto"
+                className="cursor-pointer px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white rounded-lg transition-all flex items-center gap-2 mx-auto"
               >
                 <Plus className="w-5 h-5" />
                 Browse Tasks
@@ -463,7 +463,7 @@ export default function FocusModePage() {
                           <button
                             onClick={saveNotes}
                             disabled={savingNotes}
-                            className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 flex items-center gap-1"
+                            className="cursor-pointer px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 flex items-center gap-1"
                           >
                             {savingNotes && <Loader2 className="w-3 h-3 animate-spin" />}
                             Save
@@ -537,7 +537,7 @@ export default function FocusModePage() {
                           <button
                             onClick={submitComment}
                             disabled={!newComment.trim() || submittingComment}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                            className="cursor-pointer px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                           >
                             {submittingComment ? (
                               <Loader2 className="w-4 h-4 animate-spin" />

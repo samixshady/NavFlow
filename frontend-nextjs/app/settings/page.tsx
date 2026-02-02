@@ -115,7 +115,7 @@ export default function SettingsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-t-lg whitespace-nowrap transition-colors ${
+                className={`cursor-pointer flex items-center gap-2 px-4 py-3 rounded-t-lg whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
+              <button className="cursor-pointer cursor-pointer flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
                 <Save className="w-5 h-5" />
                 Save Changes
               </button>
@@ -201,7 +201,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
+              <button className="cursor-pointer cursor-pointer flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
                 <Shield className="w-5 h-5" />
                 Update Password
               </button>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                   </div>
                   <button 
                     onClick={() => setIsDeleteModalOpen(true)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                    className="cursor-pointer px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete
@@ -277,7 +277,7 @@ export default function SettingsPage() {
               ))}
             </div>
 
-            <button className="flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
+            <button className="cursor-pointer cursor-pointer flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-colors">
               <Save className="w-5 h-5" />
               Save Preferences
             </button>
@@ -296,7 +296,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => theme === 'dark' && toggleTheme()}
-                    className={`p-6 rounded-xl border-2 transition-all ${
+                    className={`cursor-pointer p-6 rounded-xl border-2 transition-all ${
                       theme === 'light'
                         ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                   </button>
                   <button
                     onClick={() => theme === 'light' && toggleTheme()}
-                    className={`p-6 rounded-xl border-2 transition-all ${
+                    className={`cursor-pointer p-6 rounded-xl border-2 transition-all ${
                       theme === 'dark'
                         ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -402,14 +402,14 @@ export default function SettingsPage() {
                   setDeleteConfirmText('');
                   setDeleteError('');
                 }}
-                className="flex-1 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                className="cursor-pointer flex-1 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeleting || deleteConfirmText !== 'DELETE' || !deletePassword}
-                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                className="cursor-pointer cursor-pointer flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
               >
                 {isDeleting ? (
                   <>

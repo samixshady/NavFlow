@@ -1052,7 +1052,7 @@ export default function TasksPage() {
           </div>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
+            className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">New Task</span>
@@ -1079,7 +1079,7 @@ export default function TasksPage() {
           {/* Filter Toggle */}
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all flex-1 sm:flex-initial ${
+            className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all flex-1 sm:flex-initial ${
               isFilterOpen || hasActiveFilters
                 ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-purple-300'
@@ -1123,7 +1123,7 @@ export default function TasksPage() {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors sm:hidden"
+              className="cursor-pointer inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors sm:hidden"
             >
               <X className="w-4 h-4" />
               Clear
@@ -1382,9 +1382,7 @@ export default function TasksPage() {
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  <X className="w-4 h-4" />
+                  className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                   Clear Filters
                 </button>
               )}
@@ -1487,25 +1485,19 @@ export default function TasksPage() {
                         <>
                           <button
                             onClick={(e) => handlePauseTimer(task, e)}
-                            className="p-1.5 md:p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
-                            title="Pause Timer"
-                          >
+                            className="p-1.5 md:p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
                             <Pause className="w-3 h-3 md:w-4 md:h-4" />
                           </button>
                           <button
                             onClick={(e) => handleStopTimer(task, e)}
-                            className="p-1.5 md:p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
-                            title="Stop Timer"
-                          >
+                            className="p-1.5 md:p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all">
                             <Square className="w-3 h-3 md:w-4 md:h-4" />
                           </button>
                         </>
                       ) : (
                         <button
                           onClick={(e) => handleStartTimer(task, e)}
-                          className="p-1.5 md:p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all"
-                          title="Start Timer"
-                        >
+                          className="p-1.5 md:p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all">
                           <Play className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
                       )}
@@ -1795,8 +1787,6 @@ export default function TasksPage() {
               )}
                   </div>
                 </div>
-            </form>
-            </div>
 
             {/* Footer */}
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-4">
@@ -1814,10 +1804,12 @@ export default function TasksPage() {
               <button
                 type="submit"
                 onClick={handleCreateTask}
-                className="flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+                className="cursor-pointer flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
               >
                 Create Task
               </button>
+            </div>
+            </form>
             </div>
           </div>
         </div>
@@ -1825,7 +1817,7 @@ export default function TasksPage() {
 
       {/* Task Detail Modal */}
       {isDetailModalOpen && selectedTask && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center z-[100] p-0 md:p-4 lg:pl-72 lg:pr-12">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
           <div className="bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl w-full max-w-5xl h-[95vh] md:h-[88vh] shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-200 flex flex-col">
             <div className="flex items-center justify-between p-4 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 flex-shrink-0">
               <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
@@ -1858,9 +1850,7 @@ export default function TasksPage() {
                 </button>
                 <button
                   onClick={handleDeleteTask}
-                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                  title="Delete Task"
-                >
+                  className="cursor-pointer p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
                   <Trash2 className="w-5 h-5" />
                 </button>
                 <button
@@ -1904,18 +1894,14 @@ export default function TasksPage() {
                       <button
                         type="button"
                         onClick={(e) => handlePauseTimer(selectedTask, e)}
-                        className="px-3 md:px-4 py-2 md:py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base"
-                        title="Pause timer (saves time)"
-                      >
+                        className="px-3 md:px-4 py-2 md:py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base">
                         <Pause className="w-4 h-4 md:w-5 md:h-5" />
                         <span className="hidden sm:inline">Pause</span>
                       </button>
                       <button
                         type="button"
                         onClick={(e) => handleStopTimer(selectedTask, e)}
-                        className="px-3 md:px-4 py-2 md:py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base"
-                        title="Stop timer"
-                      >
+                        className="px-3 md:px-4 py-2 md:py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 text-sm md:text-base">
                         <Square className="w-4 h-4 md:w-5 md:h-5" />
                         <span className="hidden sm:inline">Stop</span>
                       </button>
@@ -1933,9 +1919,7 @@ export default function TasksPage() {
                   <button
                     type="button"
                     onClick={(e) => handleResetTimer(selectedTask, e)}
-                    className="p-2 md:p-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all"
-                    title="Reset Timer"
-                  >
+                    className="p-2 md:p-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-all">
                     <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 </div>
@@ -2181,16 +2165,13 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
+                  className="cursor-pointer px-8 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
                 >
                   Save Changes
                 </button>
               </div>
             </form>
-              </div>
 
-              {/* Right Column - Comments & Activity */}
-              <div className="w-full lg:w-96 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 pt-6 lg:pt-0 lg:pl-6">
                 {/* Inline Assignment UI */}
                 {showAssignModal && (
                   <div className="mb-6 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-300 dark:border-purple-700 shadow-lg animate-in slide-in-from-top duration-200">
@@ -2467,11 +2448,10 @@ export default function TasksPage() {
                       type="button"
                       onClick={handleSubmitComment}
                       disabled={!newComment.trim() || submittingComment}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      className="cursor-pointer px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
                       {submittingComment ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
                           Posting...
                         </>
                       ) : (
@@ -2654,9 +2634,9 @@ export default function TasksPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all"
+                    className="cursor-pointer px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all"
                   >
-                    {editingSection ? 'Save Changes' : 'Create Section'}
+                    {editingSection ? 'Update Section' : 'Create Section'}
                   </button>
                 </div>
               </div>
@@ -2665,7 +2645,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Success Toast */}
+      {/* Success Notification */}
       {success && (
         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-2 z-[100]">
           <Check className="w-5 h-5" />

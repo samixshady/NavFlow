@@ -349,14 +349,14 @@ export default function ActivityPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => fetchActivities(true)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="cursor-pointer p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   hasActiveFilters
                     ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -380,7 +380,7 @@ export default function ActivityPage() {
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                  className="cursor-pointer text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
                 >
                   <X className="w-3 h-3" />
                   Clear all
@@ -570,7 +570,7 @@ export default function ActivityPage() {
                     <button
                       onClick={loadMore}
                       disabled={loadingMore}
-                      className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
+                      className="cursor-pointer px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
                     >
                       {loadingMore ? (
                         <>
@@ -596,7 +596,7 @@ export default function ActivityPage() {
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="mt-4 text-purple-600 dark:text-purple-400 hover:underline"
+                    className="cursor-pointer mt-4 text-purple-600 dark:text-purple-400 hover:underline"
                   >
                     Clear filters
                   </button>

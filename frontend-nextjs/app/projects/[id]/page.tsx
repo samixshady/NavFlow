@@ -324,7 +324,7 @@ export default function ProjectDetailPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">The project you're looking for doesn't exist or you don't have access.</p>
               <Link
                 href="/projects"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Projects
@@ -366,7 +366,7 @@ export default function ProjectDetailPage() {
         <div className="mb-6 flex-shrink-0">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-            <Link href="/projects" className="hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1">
+            <Link href="/projects" className="cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" />
               Projects
             </Link>
@@ -406,13 +406,13 @@ export default function ProjectDetailPage() {
                 <>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="cursor-pointer px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                    className="cursor-pointer px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     Save
@@ -423,7 +423,7 @@ export default function ProjectDetailPage() {
                   {canManage && (
                     <button
                       onClick={() => setShowCreateTaskModal(true)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                      className="cursor-pointer px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
                       New Task
@@ -432,7 +432,7 @@ export default function ProjectDetailPage() {
                   {isOwner && (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      className="cursor-pointer p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     >
                       <Edit className="w-5 h-5" />
                     </button>
@@ -440,7 +440,7 @@ export default function ProjectDetailPage() {
                   {isOwner && (
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="cursor-pointer p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -522,7 +522,7 @@ export default function ProjectDetailPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md font-medium text-sm transition-all capitalize ${
+                className={`cursor-pointer px-4 py-2 rounded-md font-medium text-sm transition-all capitalize ${
                   activeTab === tab
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -547,7 +547,7 @@ export default function ProjectDetailPage() {
                   </h3>
                   <button
                     onClick={() => setActiveTab('tasks')}
-                    className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                    className="cursor-pointer text-sm text-purple-600 dark:text-purple-400 hover:underline"
                   >
                     View all
                   </button>
@@ -558,7 +558,7 @@ export default function ProjectDetailPage() {
                       <Link
                         key={task.id}
                         href={`/tasks?task=${task.id}`}
-                        className="block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                        className="cursor-pointer block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-gray-900 dark:text-white">{task.title}</span>
@@ -583,7 +583,7 @@ export default function ProjectDetailPage() {
                     {canManage && (
                       <button
                         onClick={() => setShowCreateTaskModal(true)}
-                        className="mt-3 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                        className="cursor-pointer mt-3 text-sm text-purple-600 dark:text-purple-400 hover:underline"
                       >
                         Create first task
                       </button>
@@ -602,7 +602,7 @@ export default function ProjectDetailPage() {
                   {isAdmin && (
                     <button
                       onClick={() => setShowAddMemberModal(true)}
-                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                      className="cursor-pointer text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
                     >
                       <UserPlus className="w-4 h-4" />
                       Add
@@ -673,7 +673,7 @@ export default function ProjectDetailPage() {
                 {canManage && (
                   <button
                     onClick={() => setShowCreateTaskModal(true)}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm"
+                    className="cursor-pointer px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm"
                   >
                     <Plus className="w-4 h-4" />
                     New Task
@@ -686,7 +686,7 @@ export default function ProjectDetailPage() {
                     <Link
                       key={task.id}
                       href={`/tasks?task=${task.id}`}
-                      className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="cursor-pointer flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
@@ -760,7 +760,7 @@ export default function ProjectDetailPage() {
                 {isAdmin && (
                   <button
                     onClick={() => setShowAddMemberModal(true)}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm"
+                    className="cursor-pointer px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm"
                   >
                     <UserPlus className="w-4 h-4" />
                     Add Member
@@ -807,7 +807,7 @@ export default function ProjectDetailPage() {
                             {member.role !== 'owner' && (
                               <button
                                 onClick={() => handleRemoveMember(member.user_email, member.user_name)}
-                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                className="cursor-pointer p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -826,7 +826,7 @@ export default function ProjectDetailPage() {
                   {isAdmin && (
                     <button
                       onClick={() => setShowAddMemberModal(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                      className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                     >
                       <UserPlus className="w-5 h-5" />
                       Add Member
@@ -897,7 +897,7 @@ export default function ProjectDetailPage() {
               <button
                 onClick={handleDeleteProject}
                 disabled={deleteConfirmText !== project.name}
-                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="cursor-pointer flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete Project
@@ -975,7 +975,7 @@ export default function ProjectDetailPage() {
               </button>
               <button
                 onClick={handleAddMember}
-                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="cursor-pointer flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
                 Add Member
@@ -1083,7 +1083,7 @@ export default function ProjectDetailPage() {
               </button>
               <button
                 onClick={handleCreateTask}
-                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="cursor-pointer flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Create Task

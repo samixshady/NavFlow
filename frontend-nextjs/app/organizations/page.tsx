@@ -555,7 +555,7 @@ export default function OrganizationsPage() {
             </div>
             <button
               onClick={() => setShowSuccessToast(false)}
-              className="ml-4 text-white hover:text-green-100 transition-colors"
+              className="cursor-pointer ml-4 text-white hover:text-green-100 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -579,7 +579,7 @@ export default function OrganizationsPage() {
         <div className="flex gap-3">
           <button 
             onClick={fetchOrganizations}
-            className="inline-flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+            className="cursor-pointer cursor-pointer inline-flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             title="Refresh organizations list"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -589,7 +589,7 @@ export default function OrganizationsPage() {
           </button>
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+            className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
           >
             <Plus className="w-5 h-5" />
             New Organization
@@ -635,13 +635,13 @@ export default function OrganizationsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAcceptInvitation(invitation.id)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                    className="cursor-pointer px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => handleDeclineInvitation(invitation.id)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                    className="cursor-pointer px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
                   >
                     Decline
                   </button>
@@ -665,7 +665,7 @@ export default function OrganizationsPage() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all"
+            className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-lg transition-all"
           >
             <Plus className="w-5 h-5" />
             Create Organization
@@ -728,7 +728,7 @@ export default function OrganizationsPage() {
                   setError('');
                   setSuccess('');
                 }}
-                className="p-3 hover:bg-white/50 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                className="cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
                 <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
               </button>
@@ -785,14 +785,14 @@ export default function OrganizationsPage() {
                   setError('');
                   setSuccess('');
                 }}
-                className="flex-1 px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors font-semibold text-base"
+                className="cursor-pointer flex-1 px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors font-semibold text-base"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 onClick={handleCreateOrg}
-                className="flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
+                className="cursor-pointer cursor-pointer flex-1 px-6 py-4 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl text-base"
               >
                 Create Organization
               </button>
@@ -816,7 +816,7 @@ export default function OrganizationsPage() {
                   setError('');
                   setSuccess('');
                 }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
@@ -850,7 +850,7 @@ export default function OrganizationsPage() {
                     const inviteSection = document.getElementById('invite-section');
                     inviteSection?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="group relative overflow-hidden bg-green-600 hover:bg-green-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="cursor-pointer group relative overflow-hidden bg-green-600 hover:bg-green-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -871,7 +871,7 @@ export default function OrganizationsPage() {
                     setError('Edit functionality coming soon!');
                     setTimeout(() => setError(''), 2000);
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="cursor-pointer group relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -892,7 +892,7 @@ export default function OrganizationsPage() {
                     setError('Manage Permissions functionality coming soon!');
                     setTimeout(() => setError(''), 2000);
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="cursor-pointer group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -915,7 +915,7 @@ export default function OrganizationsPage() {
                       setTimeout(() => setError(''), 2000);
                     }
                   }}
-                  className="group relative overflow-hidden bg-gradient-to-br from-red-500 via-red-600 to-rose-600 hover:from-red-600 hover:via-red-700 hover:to-rose-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
+                  className="cursor-pointer group relative overflow-hidden bg-gradient-to-br from-red-500 via-red-600 to-rose-600 hover:from-red-600 hover:via-red-700 hover:to-rose-700 rounded-2xl p-5 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] active:scale-95"
                 >
                   <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-12 h-12 mb-3 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
@@ -939,7 +939,7 @@ export default function OrganizationsPage() {
                   }
                   setShowPermissions(!showPermissions);
                 }}
-                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all group"
+                className="cursor-pointer w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all group"
               >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg shadow-purple-500/20">
@@ -1130,7 +1130,7 @@ export default function OrganizationsPage() {
                     </select>
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                      className="cursor-pointer cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
                     >
                       <UserPlus className="w-4 h-4" />
                       Invite
