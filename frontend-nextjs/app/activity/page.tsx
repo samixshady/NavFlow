@@ -106,7 +106,7 @@ export default function ActivityPage() {
         params.append('page', page.toString());
       }
       
-      const response = await api.get(`/projects/audit-logs/?${params.toString()}`);
+      const response = await api.get(`/audit-logs/?${params.toString()}`);
       const data = response.data.results || response.data || [];
       
       if (reset) {
