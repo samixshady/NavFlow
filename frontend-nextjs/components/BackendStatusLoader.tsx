@@ -30,6 +30,15 @@ const styles = `
     }
   }
 
+  @keyframes load-progress {
+    0% {
+      transform: scaleX(0);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
   .backend-status {
     display: flex;
     align-items: center;
@@ -49,12 +58,21 @@ const styles = `
     color: #f59e0b;
     border-color: rgba(245, 158, 11, 0.2);
     background: rgba(245, 158, 11, 0.05);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
 
   .backend-status.online {
     color: #10b981;
     border-color: rgba(16, 185, 129, 0.2);
     background: rgba(16, 185, 129, 0.05);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .status-spinner {
@@ -94,6 +112,28 @@ const styles = `
   .status-dot.online {
     background: #10b981;
     animation: none;
+  }
+
+  .status-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.15);
+    overflow: hidden;
+  }
+
+  .status-bar-fill {
+    height: 100%;
+    width: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.8));
+    animation: load-progress 20s ease-in-out infinite;
+  }
+
+  .status-hint {
+    font-size: 12px;
+    color: rgba(245, 158, 11, 0.85);
   }
 `;
 
@@ -216,8 +256,14 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
       <style>{styles}</style>
       {status === 'loading' ? (
         <div className="backend-status loading">
-          <div className="status-spinner"></div>
-          <span>Backend server starting...</span>
+          <div className="status-row">
+            <div className="status-spinner"></div>
+            <span>Please wait up to 20 seconds for the backend to wake.</span>
+          </div>
+          <div className="status-bar">
+            <div className="status-bar-fill"></div>
+          </div>
+          <div className="status-hint">Render's free tier sleeps between requests. You can log in when the backend is live.</div>
         </div>
       ) : (
         <div className="backend-status online">
