@@ -110,59 +110,68 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
       return;
     }
 
-    // Try to reach backend
+    // Check both API and Database connectivity
     const checkBackend = async () => {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
         try {
-          // Try health endpoint first
-          const response = await fetch('https://navflow-api.onrender.com/api/health/', {
+          // Check 1: Health endpoint (includes database check)
+          const healthResponse = await fetch('https://navflow-api.onrender.com/api/health/', {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
             },
             signal: controller.signal,
-            credentials: 'omit', // Don't send credentials to avoid CORS issues
+            credentials: 'omit',
           });
 
           clearTimeout(timeout);
 
-          if (response.ok || response.status === 200) {
-            console.log('✓ Backend is online!');
-            setStatus('success');
-            // Auto-hide after 2 seconds
-            setTimeout(() => {
-              setShowComponent(false);
-            }, 2000);
-            return true;
+          if (!healthResponse.ok) {
+            console.log('Health check failed:', healthResponse.status);
+            return false;
           }
-        } catch (innerError) {
-          clearTimeout(timeout);
-          // If health endpoint fails, try main API endpoint
+
+          const healthData = await healthResponse.json();
+          console.log('Health check response:', healthData);
+
+          // Verify database is connected
+          if (healthData.status !== 'healthy' || healthData.checks?.database !== 'connected') {
+            console.log('Database not connected. Status:', healthData.status);
+            return false;
+          }
+
+          // Check 2: API endpoint (verify API layer is working)
           try {
-            const response2 = await fetch('https://navflow-api.onrender.com/', {
+            const apiResponse = await fetch('https://navflow-api.onrender.com/', {
               method: 'GET',
               signal: controller.signal,
               credentials: 'omit',
             });
 
-            if (response2.ok || response2.status === 200 || response2.status === 404) {
-              // 404 on root is fine - it means server is responding
-              console.log('✓ Backend API is responding!');
+            clearTimeout(timeout);
+
+            // API should respond (even with 404 is fine - means server is up)
+            if (apiResponse.ok || apiResponse.status === 404 || apiResponse.status === 200) {
+              console.log('✓ Backend API is responding and database is connected!');
               setStatus('success');
+              // Auto-hide after 2 seconds
               setTimeout(() => {
                 setShowComponent(false);
               }, 2000);
               return true;
             }
-          } catch (e) {
-            // Continue retrying
+          } catch (apiError) {
+            console.log('API endpoint error:', apiError);
           }
+        } catch (innerError) {
+          clearTimeout(timeout);
+          console.log('Backend check error:', innerError);
         }
       } catch (error) {
-        console.log('Backend check error:', error);
+        console.log('Outer backend check error:', error);
       }
       return false;
     };
@@ -170,8 +179,8 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
     // Initial check
     checkBackend();
 
-    // Retry every 1.5 seconds for faster detection
-    const retryInterval = setInterval(checkBackend, 1500);
+    // Retry every 2 seconds
+    const retryInterval = setInterval(checkBackend, 2000);
 
     return () => {
       clearInterval(retryInterval);
