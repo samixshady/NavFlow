@@ -34,10 +34,10 @@ export default function Home() {
 
   // Demo credentials carousel
   const demoAccounts = [
-    { role: 'Owner', email: 'owner@demo.com', password: 'NavFlow123!', color: 'from-purple-500 to-purple-500' },
-    { role: 'Admin', email: 'admin@demo.com', password: 'NavFlow123!', color: 'from-blue-500 to-blue-500' },
-    { role: 'Moderator', email: 'moderator@demo.com', password: 'NavFlow123!', color: 'from-green-500 to-green-500' },
-    { role: 'User', email: 'user@demo.com', password: 'NavFlow123!', color: 'from-orange-500 to-orange-500' },
+    { role: 'Demo Credentials (Owner)', email: 'owner@demo.com', password: 'NavFlow123!', color: 'from-purple-500 to-purple-500' },
+    { role: 'Demo Credentials (Admin)', email: 'admin@demo.com', password: 'NavFlow123!', color: 'from-blue-500 to-blue-500' },
+    { role: 'Demo Credentials (Moderator)', email: 'moderator@demo.com', password: 'NavFlow123!', color: 'from-green-500 to-green-500' },
+    { role: 'Demo Credentials (User)', email: 'user@demo.com', password: 'NavFlow123!', color: 'from-orange-500 to-orange-500' },
   ];
   const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
