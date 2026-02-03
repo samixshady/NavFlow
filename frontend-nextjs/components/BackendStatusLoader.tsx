@@ -117,8 +117,17 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
         const timeout = setTimeout(() => controller.abort(), 8000);
 
         try {
+          // Determine backend URL based on environment
+          const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+          const backendUrl = isLocalhost 
+            ? 'http://localhost:8000' 
+            : 'https://navflow-api.onrender.com';
+          
+          console.log('🌍 Environment:', isLocalhost ? 'localhost' : 'production', '| Backend URL:', backendUrl);
+
           // Check 1: Health endpoint (includes database check)
-          const healthResponse = await fetch('https://navflow-api.onrender.com/api/health/', {
+          console.log('🔍 Checking health endpoint...');
+          const healthResponse = await fetch(`${backendUrl}/health/`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -128,34 +137,45 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
           });
 
           clearTimeout(timeout);
+          console.log('📊 Health response status:', healthResponse.status);
 
           if (!healthResponse.ok) {
-            console.log('Health check failed:', healthResponse.status);
+            console.log('❌ Health check failed with status:', healthResponse.status);
             return false;
           }
 
           const healthData = await healthResponse.json();
-          console.log('Health check response:', healthData);
+          console.log('📋 Health data:', healthData);
 
           // Verify database is connected
-          if (healthData.status !== 'healthy' || healthData.checks?.database !== 'connected') {
-            console.log('Database not connected. Status:', healthData.status);
+          const dbStatus = healthData.checks?.database;
+          console.log('🗄️ Database status:', dbStatus);
+          
+          if (healthData.status !== 'healthy') {
+            console.log('❌ Backend not healthy. Status:', healthData.status);
+            return false;
+          }
+
+          if (dbStatus !== 'connected') {
+            console.log('❌ Database not connected. Got:', dbStatus);
             return false;
           }
 
           // Check 2: API endpoint (verify API layer is working)
+          console.log('🔍 Checking API endpoint...');
           try {
-            const apiResponse = await fetch('https://navflow-api.onrender.com/', {
+            const apiResponse = await fetch(`${backendUrl}/`, {
               method: 'GET',
               signal: controller.signal,
               credentials: 'omit',
             });
 
             clearTimeout(timeout);
+            console.log('📊 API response status:', apiResponse.status);
 
             // API should respond (even with 404 is fine - means server is up)
             if (apiResponse.ok || apiResponse.status === 404 || apiResponse.status === 200) {
-              console.log('✓ Backend API is responding and database is connected!');
+              console.log('✅ Backend API is responding and database is connected!');
               setStatus('success');
               // Auto-hide after 2 seconds
               setTimeout(() => {
@@ -164,14 +184,14 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
               return true;
             }
           } catch (apiError) {
-            console.log('API endpoint error:', apiError);
+            console.log('❌ API endpoint error:', apiError);
           }
         } catch (innerError) {
           clearTimeout(timeout);
-          console.log('Backend check error:', innerError);
+          console.log('❌ Backend check error:', innerError);
         }
       } catch (error) {
-        console.log('Outer backend check error:', error);
+        console.log('❌ Outer backend check error:', error);
       }
       return false;
     };
