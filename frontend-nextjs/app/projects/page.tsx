@@ -617,7 +617,7 @@ export default function ProjectsPage() {
                       className="cursor-pointer w-full inline-flex items-center justify-center gap-3 px-5 py-4 bg-purple-50/50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100/70 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg transition-all text-base"
                     >
                       <UserPlus className="w-6 h-6" />
-                      Assign Members
+                      Manage Members
                     </button>
                     <button
                       onClick={() => setIsManageRolesModalOpen(true)}
@@ -667,12 +667,12 @@ export default function ProjectsPage() {
 
       {/* Assign Member Modal */}
       {isAssignModalOpen && selectedProject && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full p-8 shadow-2xl my-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Assign Members</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Add organization members to {selectedProject.name}</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Members</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage organization members in {selectedProject.name}</p>
               </div>
               <button
                 onClick={() => {
@@ -692,111 +692,188 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            {/* Search Input with Autocomplete */}
-            <div className="mb-4 relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search Members
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={memberSearchTerm}
-                  onChange={(e) => {
-                    setMemberSearchTerm(e.target.value);
-                    setShowSuggestions(true);
-                    setSelectedMemberEmail('');
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  placeholder="Search by name or email..."
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              {/* Suggestions Dropdown */}
-              {showSuggestions && memberSearchTerm && filteredOrgMembers.length > 0 && (
-                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                  {filteredOrgMembers.map((member, index) => (
-                    <button
-                      key={member.user_email}
-                      onClick={() => {
-                        setSelectedMemberEmail(member.user_email);
-                        setMemberSearchTerm(`${member.user_name} (${member.user_email})`);
-                        setShowSuggestions(false);
-                      }}
-                      className={`w-full flex items-center gap-3 p-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all duration-200 ${
-                        index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
-                      } ${
-                        index === 0 ? 'rounded-t-xl' : ''
-                      } ${
-                        index === filteredOrgMembers.length - 1 ? 'rounded-b-xl' : ''
-                      } group`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">
-                        {member.user_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                          {member.user_name}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
-                      </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
-                        {getRoleIcon(member.role)}
-                        {member.role_display}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* No Results Message */}
-              {showSuggestions && memberSearchTerm && filteredOrgMembers.length === 0 && (
-                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 text-center animate-in fade-in slide-in-from-top-2 duration-200">
-                  <Users className="w-12 h-12 mx-auto mb-2 text-gray-400 opacity-50" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {orgMembers.length === 0 ? 'All organization members are already in this project' : 'No members found matching your search'}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Selected Member Preview */}
-            {selectedMemberEmail && (
-              <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-xl animate-in fade-in slide-in-from-top-1 duration-300">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Member:</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                    {orgMembers.find(m => m.user_email === selectedMemberEmail)?.user_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {orgMembers.find(m => m.user_email === selectedMemberEmail)?.user_name}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedMemberEmail}</p>
-                  </div>
-                </div>
+            {success && (
+              <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
+                {success}
               </div>
             )}
 
-            {/* Role Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Project Role
-              </label>
-              <select
-                value={assignMemberRole}
-                onChange={(e) => setAssignMemberRole(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              >
-                <option value="member">Member</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
-              </select>
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column - Search and Add Form */}
+              <div className="flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add New Member</h3>
+                
+                {/* Search Input with Autocomplete */}
+                <div className="mb-4 relative flex-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Search Members
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={memberSearchTerm}
+                      onChange={(e) => {
+                        setMemberSearchTerm(e.target.value);
+                        setShowSuggestions(true);
+                        setSelectedMemberEmail('');
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      placeholder="Search by name or email..."
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && memberSearchTerm && filteredOrgMembers.length > 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                      {filteredOrgMembers.map((member, index) => (
+                        <button
+                          key={member.user_email}
+                          onClick={() => {
+                            setSelectedMemberEmail(member.user_email);
+                            setMemberSearchTerm(`${member.user_name} (${member.user_email})`);
+                            setShowSuggestions(false);
+                          }}
+                          className={`w-full flex items-center gap-3 p-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all duration-200 ${
+                            index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
+                          } ${
+                            index === 0 ? 'rounded-t-xl' : ''
+                          } ${
+                            index === filteredOrgMembers.length - 1 ? 'rounded-b-xl' : ''
+                          } group`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">
+                            {member.user_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                              {member.user_name}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{member.user_email}</p>
+                          </div>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                            {getRoleIcon(member.role)}
+                            {member.role_display}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No Results Message */}
+                  {showSuggestions && memberSearchTerm && filteredOrgMembers.length === 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 text-center animate-in fade-in slide-in-from-top-2 duration-200">
+                      <Users className="w-12 h-12 mx-auto mb-2 text-gray-400 opacity-50" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {orgMembers.length === 0 ? 'All organization members are already in this project' : 'No members found matching your search'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Member Preview */}
+                {selectedMemberEmail && (
+                  <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-xl animate-in fade-in slide-in-from-top-1 duration-300">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Member:</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                        {orgMembers.find(m => m.user_email === selectedMemberEmail)?.user_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {orgMembers.find(m => m.user_email === selectedMemberEmail)?.user_name}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{selectedMemberEmail}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Role Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Project Role
+                  </label>
+                  <select
+                    value={assignMemberRole}
+                    onChange={(e) => setAssignMemberRole(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  >
+                    <option value="member">Member</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                {/* Add Button */}
+                <button
+                  onClick={handleAssignMember}
+                  disabled={!selectedMemberEmail}
+                  className={`w-full px-4 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl ${
+                    selectedMemberEmail
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                      : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Add Member
+                </button>
+              </div>
+
+              {/* Right Column - Current Members List */}
+              <div className="flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Project Members ({members.length})</h3>
+                
+                <div className="space-y-1 overflow-y-auto max-h-[600px]">
+                  {members && members.length > 0 ? (
+                    members.map((member) => (
+                      <div key={member.user_email} className="p-2 bg-green-50/30 dark:bg-green-900/15 border border-green-200 dark:border-green-700/40 rounded hover:shadow-sm transition-all">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold flex-shrink-0 text-xs">
+                              {member.user_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
+                                {member.user_name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 truncate">{member.user_email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <select
+                              value={member.role}
+                              onChange={(e) => handleUpdateMemberRole(member.user_email, e.target.value)}
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-purple-500 ${getRoleColor(member.role)}`}
+                            >
+                              <option value="member">Member</option>
+                              <option value="moderator">Moderator</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            <button
+                              onClick={() => handleRemoveMember(member.user_email)}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded transition-colors"
+                              title="Remove member"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Users className="w-12 h-12 text-gray-400 opacity-50 mb-2" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">No members yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => {
@@ -806,18 +883,7 @@ export default function ProjectsPage() {
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleAssignMember}
-                disabled={!selectedMemberEmail}
-                className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl ${
-                  selectedMemberEmail
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                Assign Member
+                Close
               </button>
             </div>
           </div>

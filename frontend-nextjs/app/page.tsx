@@ -1,18 +1,20 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User, AtSign } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import Landing from '@/app/landing/Landing';
+import BackendStatusLoader from '@/components/BackendStatusLoader';
 
 export default function Home() {
   const router = useRouter();
   const { login } = useAuthStore();
   
   const [isLogin, setIsLogin] = useState(true);
+  const [backendLoading, setBackendLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
@@ -29,6 +31,28 @@ export default function Home() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Wake up backend on page load
+  useEffect(() => {
+    const wakeUpBackend = async () => {
+      try {
+        const response = await fetch('https://navflow-api.onrender.com/api/health/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          setBackendLoading(false);
+        }
+      } catch (error) {
+        // Retry will happen in BackendStatusLoader
+      }
+    };
+
+    wakeUpBackend();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -243,10 +267,10 @@ export default function Home() {
 
         {/* Main Content Grid */}
         <div className="flex-1 flex items-center justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 w-full">
 
-        {/* Middle Left - Big NavFlow Title */}
-        <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:space-y-8">
+            {/* Middle Left - Big NavFlow Title */}
+            <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:space-y-8">
           <div className="text-center lg:text-left">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-4 lg:mb-6">
               <span className="text-white drop-shadow-lg">Nav</span>
@@ -281,54 +305,60 @@ export default function Home() {
 
         {/* Middle Right - Login Form */}
         <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
-          <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-180px)] overflow-y-auto">
-            {/* Toggle Buttons */}
-            <div className="flex mb-4 bg-white/5 p-1 rounded-lg">
-              <button
-                onClick={() => {
-                  setIsLogin(true);
-                  setError('');
-                  setSuccess('');
-                  setFormData({
-                    email: '',
-                    username: '',
-                    first_name: '',
-                    last_name: '',
-                    password: '',
-                    password_confirm: '',
-                  });
-                }}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  isLogin 
-                    ? 'text-white shadow-md' 
-                    : 'text-gray-400 hover:text-gray-300'
-                }`}
-                style={isLogin ? { backgroundColor: '#9662f7' } : {}}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setIsLogin(false);
-                  setError('');
-                  setSuccess('');
-                  setEmail('');
-                  setPassword('');
-                }}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  !isLogin 
-                    ? 'text-white shadow-md' 
-                    : 'text-gray-400 hover:text-gray-300'
-                }`}
-                style={!isLogin ? { backgroundColor: '#9662f7'} : {}}
-              >
-                Sign Up
-              </button>
+          <div className="w-full max-w-md">
+            {/* Backend Status */}
+            <div className="mb-4">
+              <BackendStatusLoader isLoading={backendLoading} />
             </div>
+            
+            <div className="bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-180px)] overflow-y-auto">
+              {/* Toggle Buttons */}
+              <div className="flex mb-4 bg-white/5 p-1 rounded-lg">
+                <button
+                  onClick={() => {
+                    setIsLogin(true);
+                    setError('');
+                    setSuccess('');
+                    setFormData({
+                      email: '',
+                      username: '',
+                      first_name: '',
+                      last_name: '',
+                      password: '',
+                      password_confirm: '',
+                    });
+                  }}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                    isLogin 
+                      ? 'text-white shadow-md' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                  style={isLogin ? { backgroundColor: '#9662f7' } : {}}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setIsLogin(false);
+                    setError('');
+                    setSuccess('');
+                    setEmail('');
+                    setPassword('');
+                  }}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                    !isLogin 
+                      ? 'text-white shadow-md' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                  style={!isLogin ? { backgroundColor: '#9662f7'} : {}}
+                >
+                  Sign Up
+                </button>
+              </div>
 
-            <h3 className="text-xl font-bold text-white mb-4 text-center">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
-            </h3>
+              <h3 className="text-xl font-bold text-white mb-4 text-center">
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </h3>
 
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2">
@@ -583,14 +613,13 @@ export default function Home() {
                 </button>
               </form>
             )}
+            </div>
           </div>
         </div>
         </div>
-        </div>
-      </div>
 
-      {/* Modal */}
-      {isModalOpen && (
+        {/* Modal */}
+        {isModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setIsModalOpen(false)}
@@ -652,7 +681,9 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
+    </div>
     </div>
   );
 }
