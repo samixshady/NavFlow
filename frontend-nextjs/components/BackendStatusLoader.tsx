@@ -128,7 +128,7 @@ const styles = `
     transform-origin: left;
     transform: scaleX(0);
     background: linear-gradient(90deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.8));
-    animation: load-progress 20s ease-in-out infinite;
+    animation: load-progress 30s ease-in-out infinite;
   }
 
   .status-hint {
@@ -258,7 +258,7 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
         <div className="backend-status loading">
           <div className="status-row">
             <div className="status-spinner"></div>
-            <span>Please wait up to 20 seconds for the backend to wake.</span>
+            <span>Please wait 20-40 seconds for the backend to wake.</span>
           </div>
           <div className="status-bar">
             <div className="status-bar-fill"></div>
