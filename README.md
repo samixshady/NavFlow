@@ -194,28 +194,6 @@ High-level architecture and data flow:
          +-------------------------+     +-------------------------+
 ```
 
-### Mermaid Diagram (GitHub Renderable)
-```mermaid
-flowchart TD
-  U[End Users] -->|HTTPS| F[Next.js Frontend
-(Vercel / Local)]
-  F -->|REST + JWT| A[Django + DRF API
-(Render / Local)]
-  A -->|ORM| DB[(PostgreSQL)]
-  A -->|Static| S[Whitenoise / CDN]
-
-  subgraph Tenancy[Multi-Tenant Boundary]
-    O[Organization]
-    M[Memberships + OrgPermissions]
-    P[Projects + ProjectRoles]
-    T[Tasks + Sections + Labels]
-    N[Notifications + Audit Logs]
-    O --> M --> P --> T --> N
-  end
-
-  A --> Tenancy
-```
-
 ### Request Flow (Sequence Diagram)
 ```mermaid
 sequenceDiagram
