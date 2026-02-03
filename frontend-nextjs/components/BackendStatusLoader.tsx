@@ -103,43 +103,82 @@ interface BackendStatusLoaderProps {
 
 export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderProps) {
   const [status, setStatus] = useState<'loading' | 'success'>('loading');
+  const [showComponent, setShowComponent] = useState(true);
 
   useEffect(() => {
-    if (!isLoading) {
-      setStatus('loading');
+    if (!isLoading || !showComponent) {
       return;
     }
 
     // Try to reach backend
     const checkBackend = async () => {
       try {
-        const response = await fetch('https://navflow-api.onrender.com/api/health/', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
-        if (response.ok) {
-          setStatus('success');
+        try {
+          // Try health endpoint first
+          const response = await fetch('https://navflow-api.onrender.com/api/health/', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+            credentials: 'omit', // Don't send credentials to avoid CORS issues
+          });
+
+          clearTimeout(timeout);
+
+          if (response.ok || response.status === 200) {
+            console.log('✓ Backend is online!');
+            setStatus('success');
+            // Auto-hide after 2 seconds
+            setTimeout(() => {
+              setShowComponent(false);
+            }, 2000);
+            return true;
+          }
+        } catch (innerError) {
+          clearTimeout(timeout);
+          // If health endpoint fails, try main API endpoint
+          try {
+            const response2 = await fetch('https://navflow-api.onrender.com/', {
+              method: 'GET',
+              signal: controller.signal,
+              credentials: 'omit',
+            });
+
+            if (response2.ok || response2.status === 200 || response2.status === 404) {
+              // 404 on root is fine - it means server is responding
+              console.log('✓ Backend API is responding!');
+              setStatus('success');
+              setTimeout(() => {
+                setShowComponent(false);
+              }, 2000);
+              return true;
+            }
+          } catch (e) {
+            // Continue retrying
+          }
         }
       } catch (error) {
-        // Retry
+        console.log('Backend check error:', error);
       }
+      return false;
     };
 
     // Initial check
     checkBackend();
 
-    // Retry every 2 seconds
-    const retryInterval = setInterval(checkBackend, 2000);
+    // Retry every 1.5 seconds for faster detection
+    const retryInterval = setInterval(checkBackend, 1500);
 
     return () => {
       clearInterval(retryInterval);
     };
-  }, [isLoading]);
+  }, [isLoading, showComponent]);
 
-  if (!isLoading) {
+  if (!isLoading || !showComponent) {
     return null;
   }
 

@@ -43,11 +43,15 @@ export default function Home() {
           },
         });
         
-        if (response.ok) {
+        console.log('Initial backend ping response:', response.status);
+        
+        if (response.ok || response.status === 200) {
+          console.log('Backend is immediately online!');
           setBackendLoading(false);
         }
       } catch (error) {
-        // Retry will happen in BackendStatusLoader
+        console.log('Initial backend ping error:', error);
+        // Keep loading true so BackendStatusLoader will keep trying
       }
     };
 
