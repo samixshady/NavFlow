@@ -45,9 +45,13 @@ interface Notification {
   time_ago: string;
   actor_name: string | null;
   actor_username: string | null;
-  action_status: 'pending' | 'accepted' | 'declined' | null;
+  action_status: 'pending' | 'accepted' | 'declined' | 'none' | null;
   action_data: any | null;
+  related_task_id: number | null;
+  related_project_id: number | null;
   related_org_id: number | null;
+  related_comment_id: number | null;
+  is_actionable: boolean;
 }
 
 interface UserProfile {
@@ -96,9 +100,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [isAllNotificationsOpen, setIsAllNotificationsOpen] = useState(false);
+  const [isLoadingAllNotifications, setIsLoadingAllNotifications] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -126,7 +133,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   });
   const [isSaving, setIsSaving] = useState(false);
   
-  const notificationRef = useRef<HTMLDivElement>(null);
+  const notificationMobileRef = useRef<HTMLDivElement>(null);
+  const notificationDesktopRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Fetch user profile
@@ -188,13 +196,31 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     }
   };
 
+  const fetchAllNotifications = async () => {
+    setIsLoadingAllNotifications(true);
+    try {
+      const response = await api.get('/accounts/notifications/all/');
+      setAllNotifications(response.data.results || []);
+      if (typeof response.data.unread_count === 'number') {
+        setUnreadCount(response.data.unread_count);
+      }
+    } catch (error) {
+      console.error('Error fetching all notifications:', error);
+    } finally {
+      setIsLoadingAllNotifications(false);
+    }
+  };
+
+  const updateNotificationState = (id: number, updates: Partial<Notification>) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, ...updates } : n)));
+    setAllNotifications(prev => prev.map(n => (n.id === id ? { ...n, ...updates } : n)));
+  };
+
   const markNotificationRead = async (id: number) => {
     try {
       await api.post(`/accounts/notifications/${id}/mark_read/`);
-      setNotifications(notifications.map(n => 
-        n.id === id ? { ...n, is_read: true } : n
-      ));
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      updateNotificationState(id, { is_read: true });
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -203,7 +229,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const markAllRead = async () => {
     try {
       await api.post('/accounts/notifications/mark_all_read/');
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setAllNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -214,12 +241,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     e.stopPropagation();
     try {
       await api.post(`/accounts/notifications/${notificationId}/accept/`);
-      setNotifications(notifications.map(n => 
-        n.id === notificationId 
-          ? { ...n, action_status: 'accepted', is_read: true } 
-          : n
-      ));
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      updateNotificationState(notificationId, { action_status: 'accepted', is_read: true });
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error accepting invitation:', error);
     }
@@ -229,25 +252,50 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     e.stopPropagation();
     try {
       await api.post(`/accounts/notifications/${notificationId}/decline/`);
-      setNotifications(notifications.map(n => 
-        n.id === notificationId 
-          ? { ...n, action_status: 'declined', is_read: true } 
-          : n
-      ));
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      updateNotificationState(notificationId, { action_status: 'declined', is_read: true });
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error declining invitation:', error);
     }
+  };
+
+  const getNotificationLink = (notification: Notification) => {
+    const actionData = notification.action_data || {};
+    const relatedOrgId = notification.related_org_id ?? actionData.org_id ?? actionData.orgId;
+    const relatedProjectId = notification.related_project_id ?? actionData.project_id ?? actionData.projectId;
+    const relatedTaskId = notification.related_task_id ?? actionData.task_id ?? actionData.taskId;
+
+    if (notification.link) {
+      return notification.link;
+    }
+    if (notification.type === 'org_invite' && relatedOrgId) {
+      return `/organizations/${relatedOrgId}`;
+    }
+    if (notification.type === 'project_invite' && relatedProjectId) {
+      return `/projects/${relatedProjectId}`;
+    }
+    if (relatedProjectId) {
+      return `/projects/${relatedProjectId}`;
+    }
+    if (relatedOrgId) {
+      return `/organizations/${relatedOrgId}`;
+    }
+    if (relatedTaskId) {
+      return `/tasks?task=${relatedTaskId}`;
+    }
+    return null;
   };
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
       markNotificationRead(notification.id);
     }
-    if (notification.link) {
-      router.push(notification.link);
+    const link = getNotificationLink(notification);
+    if (link) {
+      router.push(link);
     }
     setIsNotificationsOpen(false);
+    setIsAllNotificationsOpen(false);
   };
 
   const handleSaveProfile = async () => {
@@ -355,7 +403,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+      const targetNode = event.target as Node;
+      const clickedInsideNotifications =
+        (notificationMobileRef.current && notificationMobileRef.current.contains(targetNode)) ||
+        (notificationDesktopRef.current && notificationDesktopRef.current.contains(targetNode));
+
+      if (!clickedInsideNotifications) {
         setIsNotificationsOpen(false);
       }
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -371,6 +424,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         setIsSearchOpen(false);
         setIsNotificationsOpen(false);
         setIsProfileOpen(false);
+        setIsAllNotificationsOpen(false);
       }
     };
 
@@ -393,6 +447,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       default:
         return <Bell className="w-4 h-4 text-gray-500" />;
     }
+  };
+
+  const handleOpenAllNotifications = () => {
+    setIsNotificationsOpen(false);
+    setIsAllNotificationsOpen(true);
+    fetchAllNotifications();
   };
 
   return (
@@ -626,7 +686,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             </button>
 
             {/* Mobile Notifications */}
-            <div className="relative" ref={notificationRef}>
+            <div className="relative" ref={notificationMobileRef}>
               <button 
                 onClick={() => {
                   setIsNotificationsOpen(!isNotificationsOpen);
@@ -637,7 +697,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               >
                 <FaBell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">
+                  <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-white text-[9px] font-bold leading-none flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -675,7 +735,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             </button>
 
             {/* Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notificationDesktopRef}>
               <button 
                 onClick={() => {
                   setIsNotificationsOpen(!isNotificationsOpen);
@@ -689,7 +749,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 <span className="btn-icon relative">
                   <FaBell size={14} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">
+                    <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-white text-[9px] font-bold leading-none flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -752,7 +812,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                           </p>
                           
                           {/* Invitation Actions */}
-                          {notification.type === 'invitation' && notification.action_status === 'pending' && (
+                          {(notification.is_actionable || notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'pending' && (
                             <div className="flex items-center gap-2 mt-2">
                               <button
                                 onClick={(e) => handleAcceptInvitation(notification.id, e)}
@@ -772,17 +832,17 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                           )}
                           
                           {/* Show status if already acted upon */}
-                          {notification.type === 'invitation' && notification.action_status === 'accepted' && (
+                          {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'accepted' && (
                             <div className="mt-2">
                               <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                                ✓ Accepted
+                                Accepted
                               </span>
                             </div>
                           )}
-                          {notification.type === 'invitation' && notification.action_status === 'declined' && (
+                          {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'declined' && (
                             <div className="mt-2">
                               <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
-                                ✗ Declined
+                                Declined
                               </span>
                             </div>
                           )}
@@ -796,8 +856,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                   <button
                     onClick={() => {
-                      router.push('/activity');
-                      setIsNotificationsOpen(false);
+                      handleOpenAllNotifications();
                     }}
                     className="w-full text-center text-sm text-purple-600 dark:text-purple-400 hover:underline py-1"
                   >
@@ -919,6 +978,119 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </div>
       </div>
       </header>
+
+      {/* All Notifications Modal */}
+      {isAllNotificationsOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={() => setIsAllNotificationsOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl my-8 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">All Notifications</h2>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsAllNotificationsOpen(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  aria-label="Close notifications"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto">
+              {isLoadingAllNotifications ? (
+                <div className="p-8 text-center">
+                  <div className="w-8 h-8 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                </div>
+              ) : allNotifications.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
+                </div>
+              ) : (
+                allNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer ${
+                      !notification.is_read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                    }`}
+                  >
+                    <div className="mt-0.5 p-2 rounded-full bg-gray-100 dark:bg-gray-700">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                          {notification.title}
+                        </p>
+                        {!notification.is_read && (
+                          <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        {notification.time_ago}
+                      </p>
+
+                      {/* Invitation Actions */}
+                      {(notification.is_actionable || notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'pending' && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={(e) => handleAcceptInvitation(notification.id, e)}
+                            className="px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
+                          >
+                            <Check className="w-3 h-3" />
+                            Accept
+                          </button>
+                          <button
+                            onClick={(e) => handleDeclineInvitation(notification.id, e)}
+                            className="px-3 py-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                          >
+                            <X className="w-3 h-3" />
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Show status if already acted upon */}
+                      {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'accepted' && (
+                        <div className="mt-2">
+                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                            Accepted
+                          </span>
+                        </div>
+                      )}
+                      {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'declined' && (
+                        <div className="mt-2">
+                          <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
+                            Declined
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Profile Modal */}
       {isEditProfileOpen && (
