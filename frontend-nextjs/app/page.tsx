@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, User, AtSign } from 'lucide-react';
+import { Github, Code2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, User, AtSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import Landing from '@/app/landing/Landing';
@@ -31,6 +31,31 @@ export default function Home() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Demo credentials carousel
+  const demoAccounts = [
+    { role: 'Owner', email: 'owner@demo.com', password: 'NavFlow123!', color: 'from-purple-500 to-purple-500' },
+    { role: 'Admin', email: 'admin@demo.com', password: 'NavFlow123!', color: 'from-blue-500 to-blue-500' },
+    { role: 'Moderator', email: 'moderator@demo.com', password: 'NavFlow123!', color: 'from-green-500 to-green-500' },
+    { role: 'User', email: 'user@demo.com', password: 'NavFlow123!', color: 'from-orange-500 to-orange-500' },
+  ];
+  const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+
+  const handleDemoNavigation = (direction: 'prev' | 'next') => {
+    setSlideDirection(direction === 'next' ? 'right' : 'left');
+    if (direction === 'next') {
+      setCurrentDemoIndex((prev) => (prev + 1) % demoAccounts.length);
+    } else {
+      setCurrentDemoIndex((prev) => (prev - 1 + demoAccounts.length) % demoAccounts.length);
+    }
+  };
+
+  const handleUseDemoAccount = () => {
+    const account = demoAccounts[currentDemoIndex];
+    setEmail(account.email);
+    setPassword(account.password);
+  };
 
   // Wake up backend on page load
   useEffect(() => {
@@ -411,7 +436,7 @@ export default function Home() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
                       disabled={loading}
                       required
@@ -445,21 +470,86 @@ export default function Home() {
                   )}
                 </button>
 
-                {/* Demo Credentials */}
-                <div 
-                  className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg mt-6 cursor-pointer hover:bg-purple-500/20 hover:border-purple-500/40 transition-all"
-                  onClick={() => {
-                    setEmail('projectowner@example.com');
-                    setPassword('TestPass123!');
-                  }}
-                >
-                  <p className="text-s font-semibold text-purple-300 mb-2">Demo Credentials (click to use):</p>
-                  <p className="text-s text-gray-400 mb-1">
-                    📧 projectowner@example.com
-                  </p>
-                  <p className="text-s text-gray-400">
-                    🔑 TestPass123!
-                  </p>
+                {/* Demo Credentials Carousel */}
+                <div className="mt-4">
+                  <div className="relative">
+                    {/* Carousel Container */}
+                    <div className="relative overflow-hidden rounded-lg">
+                      <div 
+                        key={currentDemoIndex}
+                        className={`p-3 sm:p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg cursor-pointer transform transition-all duration-300 hover:bg-white/10 hover:border-purple-400/40 active:scale-[0.98]
+                        ${slideDirection === 'right' ? 'animate-slideInRight' : 'animate-slideInLeft'}`}
+                        onClick={handleUseDemoAccount}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-sm sm:text-base font-bold bg-gradient-to-r ${demoAccounts[currentDemoIndex].color} bg-clip-text text-transparent`}>
+                              {demoAccounts[currentDemoIndex].role}
+                            </span>
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">
+                            {currentDemoIndex + 1}/{demoAccounts.length}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-300">
+                            <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
+                            <span className="font-mono truncate">{demoAccounts[currentDemoIndex].email}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-300">
+                            <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
+                            <span className="font-mono">{demoAccounts[currentDemoIndex].password}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 text-[10px] sm:text-xs text-center text-purple-300/60">
+                          Tap to auto-fill ✨
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Navigation Controls */}
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleDemoNavigation('prev')}
+                        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
+                        aria-label="Previous account"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-purple-300" />
+                      </button>
+                      
+                      {/* Dots Indicator */}
+                      <div className="flex gap-1.5">
+                        {demoAccounts.map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              setSlideDirection(index > currentDemoIndex ? 'right' : 'left');
+                              setCurrentDemoIndex(index);
+                            }}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              index === currentDemoIndex 
+                                ? 'w-6 bg-gradient-to-r ' + demoAccounts[index].color
+                                : 'w-1.5 bg-white/20 hover:bg-white/30'
+                            }`}
+                            aria-label={`Go to ${demoAccounts[index].role} account`}
+                          />
+                        ))}
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => handleDemoNavigation('next')}
+                        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
+                        aria-label="Next account"
+                      >
+                        <ChevronRight className="w-4 h-4 text-purple-300" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </form>
             ) : (
@@ -562,7 +652,7 @@ export default function Home() {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
@@ -589,7 +679,7 @@ export default function Home() {
                       name="password_confirm"
                       value={formData.password_confirm}
                       onChange={handleChange}
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
