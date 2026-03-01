@@ -87,7 +87,7 @@ WSGI_APPLICATION = 'navflow.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Use DATABASE_URL if provided (Render), otherwise use individual config values
+# Use DATABASE_URL if provided by environment, otherwise use individual config values
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
