@@ -640,30 +640,164 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </div>
 
         {/* Mobile Search Bar */}
-        <div className="md:hidden flex-1 max-w-xs">
+        <div className="md:hidden flex-1 max-w-xs" ref={searchRef}>
           <div className="relative w-full">
-            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-10">
               <Search className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-colors" />
             </div>
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={() => searchTerm && setIsSearchOpen(true)}
-              className="w-full h-8 pl-8 pr-8 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
+              className="w-full h-8 pl-8 pr-8 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
             />
-            {searchTerm && (
+            {isSearching && (
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                <Loader2 className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 animate-spin" />
+              </div>
+            )}
+            {!isSearching && searchTerm && (
               <button
                 onClick={() => {
                   setSearchTerm('');
                   setIsSearchOpen(false);
+                  searchInputRef.current?.focus();
                 }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 aria-label="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
+            )}
+
+            {/* Mobile Search Results Dropdown */}
+            {isSearchOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 sm:max-h-96 overflow-y-auto z-50">
+                {isSearching ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Searching...</span>
+                  </div>
+                ) : !hasSearchResults ? (
+                  <div className="py-6 text-center text-gray-500 dark:text-gray-400">
+                    <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs sm:text-sm">No results for "{searchTerm}"</p>
+                  </div>
+                ) : (
+                  <div className="py-1">
+                    {/* Projects Section */}
+                    {searchResults.projects.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                          Projects
+                        </div>
+                        {searchResults.projects.map((result) => (
+                          <button
+                            key={`project-${result.id}`}
+                            onClick={() => handleSearchResultClick(result)}
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                          >
+                            <div className="p-1.5 rounded bg-purple-100 dark:bg-purple-900/30 flex-shrink-0">
+                              <FolderKanban className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {result.name}
+                              </p>
+                              {result.organization_name && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {result.organization_name}
+                                </p>
+                              )}
+                            </div>
+                            {result.status && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${
+                                result.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                result.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                              }`}>
+                                {result.status}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tasks Section */}
+                    {searchResults.tasks.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                          Tasks
+                        </div>
+                        {searchResults.tasks.map((result) => (
+                          <button
+                            key={`task-${result.id}`}
+                            onClick={() => handleSearchResultClick(result)}
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                          >
+                            <div className="p-1.5 rounded bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
+                              <CheckSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {result.name}
+                              </p>
+                              {result.description && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {result.description}
+                                </p>
+                              )}
+                            </div>
+                            {result.status && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${
+                                result.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                result.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                              }`}>
+                                {result.status?.replace('_', ' ')}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Organizations Section */}
+                    {searchResults.organizations.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                          Organizations
+                        </div>
+                        {searchResults.organizations.map((result) => (
+                          <button
+                            key={`org-${result.id}`}
+                            onClick={() => handleSearchResultClick(result)}
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                          >
+                            <div className="p-1.5 rounded bg-green-100 dark:bg-green-900/30 flex-shrink-0">
+                              <Building2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {result.name}
+                              </p>
+                              {result.description && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {result.description}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -702,16 +836,221 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   </span>
                 )}
               </button>
+
+              {/* Mobile Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notifications List */}
+                  <div className="max-h-96 overflow-y-auto">
+                    {isLoadingNotifications ? (
+                      <div className="p-8 text-center">
+                        <div className="w-8 h-8 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer ${
+                            !notification.is_read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                          }`}
+                        >
+                          <div className="mt-0.5 p-2 rounded-full bg-gray-100 dark:bg-gray-700">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                                {notification.title}
+                              </p>
+                              {!notification.is_read && (
+                                <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              {notification.time_ago}
+                            </p>
+                            
+                            {/* Invitation Actions */}
+                            {(notification.is_actionable || notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'pending' && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <button
+                                  onClick={(e) => handleAcceptInvitation(notification.id, e)}
+                                  className="px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeclineInvitation(notification.id, e)}
+                                  className="px-3 py-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Decline
+                                </button>
+                              </div>
+                            )}
+                            
+                            {/* Show status if already acted upon */}
+                            {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'accepted' && (
+                              <div className="mt-2">
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                                  Accepted
+                                </span>
+                              </div>
+                            )}
+                            {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'declined' && (
+                              <div className="mt-2">
+                                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
+                                  Declined
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <button
+                      onClick={() => {
+                        handleOpenAllNotifications();
+                      }}
+                      className="w-full text-center text-sm text-purple-600 dark:text-purple-400 hover:underline py-1"
+                    >
+                      View all notifications
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Mobile Profile */}
-            <button 
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Profile"
-            >
-              <FaUser className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Profile"
+              >
+                <FaUser className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </button>
+
+              {/* Mobile Profile Dropdown */}
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+                  {/* Profile Header */}
+                  <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500">
+                    <div className="flex items-center gap-3">
+                      {profile?.avatar ? (
+                        <img 
+                          src={profile.avatar} 
+                          alt={profile.full_name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-white/50"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-xl">
+                            {profile?.initials || 'U'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-white truncate">
+                          {profile?.full_name || 'User'}
+                        </h4>
+                        <p className="text-sm text-white/80 truncate">
+                          {profile?.email}
+                        </p>
+                        {profile?.job_title && (
+                          <p className="text-xs text-white/60 truncate">
+                            {profile.job_title}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile Info */}
+                  <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                    {profile?.department && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <Briefcase className="w-4 h-4" />
+                        <span>{profile.department}</span>
+                      </div>
+                    )}
+                    {profile?.location && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <MapPin className="w-4 h-4" />
+                        <span>{profile.location}</span>
+                      </div>
+                    )}
+                    {!profile?.department && !profile?.location && (
+                      <p className="text-sm text-gray-400 italic">Complete your profile</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setIsEditProfileOpen(true);
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Edit Profile</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push('/settings');
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    </button>
+                  </div>
+
+                  {/* Logout */}
+                  <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Desktop Buttons */}
@@ -756,115 +1095,115 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </span>
               </button>
 
-            {/* Notifications Dropdown */}
-            {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                {/* Header */}
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllRead}
-                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-
-                {/* Notifications List */}
-                <div className="max-h-96 overflow-y-auto">
-                  {isLoadingNotifications ? (
-                    <div className="p-8 text-center">
-                      <div className="w-8 h-8 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer ${
-                          !notification.is_read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
-                        }`}
+              {/* Desktop Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
                       >
-                        <div className="mt-0.5 p-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                              {notification.title}
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notifications List */}
+                  <div className="max-h-96 overflow-y-auto">
+                    {isLoadingNotifications ? (
+                      <div className="p-8 text-center">
+                        <div className="w-8 h-8 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer ${
+                            !notification.is_read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                          }`}
+                        >
+                          <div className="mt-0.5 p-2 rounded-full bg-gray-100 dark:bg-gray-700">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                                {notification.title}
+                              </p>
+                              {!notification.is_read && (
+                                <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                              {notification.message}
                             </p>
-                            {!notification.is_read && (
-                              <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></span>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              {notification.time_ago}
+                            </p>
+                            
+                            {/* Invitation Actions */}
+                            {(notification.is_actionable || notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'pending' && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <button
+                                  onClick={(e) => handleAcceptInvitation(notification.id, e)}
+                                  className="px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeclineInvitation(notification.id, e)}
+                                  className="px-3 py-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Decline
+                                </button>
+                              </div>
+                            )}
+                            
+                            {/* Show status if already acted upon */}
+                            {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'accepted' && (
+                              <div className="mt-2">
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                                  Accepted
+                                </span>
+                              </div>
+                            )}
+                            {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'declined' && (
+                              <div className="mt-2">
+                                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
+                                  Declined
+                                </span>
+                              </div>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            {notification.time_ago}
-                          </p>
-                          
-                          {/* Invitation Actions */}
-                          {(notification.is_actionable || notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'pending' && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <button
-                                onClick={(e) => handleAcceptInvitation(notification.id, e)}
-                                className="px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
-                              >
-                                <Check className="w-3 h-3" />
-                                Accept
-                              </button>
-                              <button
-                                onClick={(e) => handleDeclineInvitation(notification.id, e)}
-                                className="px-3 py-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
-                              >
-                                <X className="w-3 h-3" />
-                                Decline
-                              </button>
-                            </div>
-                          )}
-                          
-                          {/* Show status if already acted upon */}
-                          {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'accepted' && (
-                            <div className="mt-2">
-                              <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                                Accepted
-                              </span>
-                            </div>
-                          )}
-                          {(notification.type === 'org_invite' || notification.type === 'project_invite') && notification.action_status === 'declined' && (
-                            <div className="mt-2">
-                              <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
-                                Declined
-                              </span>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
 
-                {/* Footer */}
-                <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                  <button
-                    onClick={() => {
-                      handleOpenAllNotifications();
-                    }}
-                    className="w-full text-center text-sm text-purple-600 dark:text-purple-400 hover:underline py-1"
-                  >
-                    View all notifications
-                  </button>
+                  {/* Footer */}
+                  <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <button
+                      onClick={() => {
+                        handleOpenAllNotifications();
+                      }}
+                      className="w-full text-center text-sm text-purple-600 dark:text-purple-400 hover:underline py-1"
+                    >
+                      View all notifications
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
 
             {/* Profile */}
@@ -881,98 +1220,98 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </span>
               </button>
 
-            {/* Profile Dropdown */}
-            {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                {/* Profile Header */}
-                <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500">
-                  <div className="flex items-center gap-3">
-                    {profile?.avatar ? (
-                      <img 
-                        src={profile.avatar} 
-                        alt={profile.full_name}
-                        className="w-14 h-14 rounded-full object-cover ring-2 ring-white/50"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">
-                          {profile?.initials || 'U'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white truncate">
-                        {profile?.full_name || 'User'}
-                      </h4>
-                      <p className="text-sm text-white/80 truncate">
-                        {profile?.email}
-                      </p>
-                      {profile?.job_title && (
-                        <p className="text-xs text-white/60 truncate">
-                          {profile.job_title}
-                        </p>
+              {/* Desktop Profile Dropdown */}
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+                  {/* Profile Header */}
+                  <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500">
+                    <div className="flex items-center gap-3">
+                      {profile?.avatar ? (
+                        <img 
+                          src={profile.avatar} 
+                          alt={profile.full_name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-white/50"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-xl">
+                            {profile?.initials || 'U'}
+                          </span>
+                        </div>
                       )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-white truncate">
+                          {profile?.full_name || 'User'}
+                        </h4>
+                        <p className="text-sm text-white/80 truncate">
+                          {profile?.email}
+                        </p>
+                        {profile?.job_title && (
+                          <p className="text-xs text-white/60 truncate">
+                            {profile.job_title}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Profile Info */}
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                  {profile?.department && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      <Briefcase className="w-4 h-4" />
-                      <span>{profile.department}</span>
-                    </div>
-                  )}
-                  {profile?.location && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <MapPin className="w-4 h-4" />
-                      <span>{profile.location}</span>
-                    </div>
-                  )}
-                  {!profile?.department && !profile?.location && (
-                    <p className="text-sm text-gray-400 italic">Complete your profile</p>
-                  )}
-                </div>
+                  {/* Profile Info */}
+                  <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                    {profile?.department && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <Briefcase className="w-4 h-4" />
+                        <span>{profile.department}</span>
+                      </div>
+                    )}
+                    {profile?.location && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <MapPin className="w-4 h-4" />
+                        <span>{profile.location}</span>
+                      </div>
+                    )}
+                    {!profile?.department && !profile?.location && (
+                      <p className="text-sm text-gray-400 italic">Complete your profile</p>
+                    )}
+                  </div>
 
-                {/* Actions */}
-                <div className="p-2">
-                  <button
-                    onClick={() => {
-                      setIsEditProfileOpen(true);
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <UserIcon className="w-4 h-4" />
-                    <span>Edit Profile</span>
-                    <ChevronRight className="w-4 h-4 ml-auto" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      router.push('/settings');
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                    <ChevronRight className="w-4 h-4 ml-auto" />
-                  </button>
-                </div>
+                  {/* Actions */}
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setIsEditProfileOpen(true);
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Edit Profile</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push('/settings');
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    </button>
+                  </div>
 
-                {/* Logout */}
-                <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign out</span>
-                  </button>
+                  {/* Logout */}
+                  <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
         </div>

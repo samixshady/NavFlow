@@ -262,87 +262,88 @@ export default function Home() {
       <Landing />
 
       {/* Content Container */}
-      <div className="relative z-10 w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+      <div className="relative z-10 w-full flex min-h-screen max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-col">
         
         {/* Top Section - Made by Sami & Buttons */}
-        <div className="flex-shrink-0 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 lg:mb-8">
-          <p className="text-lg sm:text-xl lg:text-lg font-medium text-gray-300 whitespace-nowrap">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3 sm:mb-4 lg:mb-6">
+          <p className="text-sm sm:text-base lg:text-base font-medium text-gray-300 whitespace-nowrap order-2 sm:order-1">
             Made by{' '}
             <span className="font-semibold" style={{ color: '#9662f7' }}>
               Sami
             </span>
           </p>
-          <div className="flex flex-row gap-2 lg:gap-3">
+          <div className="flex flex-row gap-1.5 sm:gap-2 lg:gap-2.5 order-1 sm:order-2">
             <a
               href="https://github.com/samixshady"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white text-base font-medium hover:from-purple-600/30 hover:to-pink-600/30 transition-all duration-300 backdrop-blur-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 lg:px-3.5 lg:py-2 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white text-xs lg:text-sm font-medium hover:from-purple-600/30 hover:to-pink-600/30 transition-all duration-300 backdrop-blur-sm"
             >
-              <Github className="w-4 h-4" />
-              GitHub
+              <Github className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">GitHub</span>
             </a>
             <a
               href="https://github.com/samixshady/NavFlow"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 text-white text-base font-medium hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 backdrop-blur-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 lg:px-3.5 lg:py-2 rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 text-white text-xs lg:text-sm font-medium hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 backdrop-blur-sm"
             >
-              <Code2 className="w-4 h-4" />
-              Source Code
+              <Code2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">Source</span>
+              <span className="inline sm:hidden">Code</span>
             </a>
           </div>
         </div>
 
         {/* Main Content Grid */}
         <div className="flex-1 flex items-center justify-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4 lg:gap-6 w-full">
 
             {/* Middle Left - Big NavFlow Title */}
-            <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:space-y-8">
+            <div className="col-span-1 lg:col-span-7 flex flex-col justify-center space-y-4 sm:space-y-6 lg:space-y-8 mb-6 lg:mb-0">
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-4 lg:mb-6">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-3 sm:mb-4 lg:mb-5">
               <span className="text-white drop-shadow-lg">Nav</span>
               <span style={{ color: '#9662f7' }}>Flow</span>
             </h1>
             
             {/* Project Description */}
-            <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-8">
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
+            <div className="space-y-3 sm:space-y-4 lg:space-y-5 mt-3 sm:mt-4 lg:mt-5">
+              <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug">
                 Project Management
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Made Simple
                 </span>
               </h2>
-              <p className="text-base sm:text-lg text-gray-300 leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm md:text-base text-gray-300 leading-relaxed max-w-xl">
                 Collaborate seamlessly with your team, manage projects efficiently, and deliver on time. NavFlow provides all the tools you need for modern project management in one intuitive platform.
               </p>
               
               {/* Read More Button */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 lg:px-5 lg:py-2.5 text-xs sm:text-sm lg:text-base text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
                 style={{ backgroundColor: '#9662f7', boxShadow: '0 0 20px rgba(183, 166, 214, 0.3)' }}
               >
                 Read More
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Middle Right - Login Form */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2">
-          <div className="w-full max-w-md">
+        <div className="col-span-1 lg:col-span-5 flex justify-center lg:justify-end order-1 lg:order-2 w-full">
+          <div className="w-full max-w-sm">
             {/* Backend Status */}
-            <div className="mb-4">
+            <div className="mb-2 sm:mb-3">
               <BackendStatusLoader isLoading={backendLoading} />
             </div>
             
-            <div className="bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-180px)] overflow-y-auto">
+            <div className="bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xl max-h-[calc(100vh-120px)] overflow-y-auto">
               {/* Toggle Buttons */}
-              <div className="flex mb-4 bg-white/5 p-1 rounded-lg">
+              <div className="flex mb-3 bg-white/5 p-1 rounded-lg gap-1">
                 <button
                   onClick={() => {
                     setIsLogin(true);
@@ -357,7 +358,7 @@ export default function Home() {
                       password_confirm: '',
                     });
                   }}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 py-1.5 px-3 sm:px-4 rounded-md text-xs font-medium transition-all duration-200 ${
                     isLogin 
                       ? 'text-white shadow-md' 
                       : 'text-gray-400 hover:text-gray-300'
@@ -374,7 +375,7 @@ export default function Home() {
                     setEmail('');
                     setPassword('');
                   }}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 py-1.5 px-3 sm:px-4 rounded-md text-xs font-medium transition-all duration-200 ${
                     !isLogin 
                       ? 'text-white shadow-md' 
                       : 'text-gray-400 hover:text-gray-300'
@@ -385,30 +386,30 @@ export default function Home() {
                 </button>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-4 text-center">
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-3 text-center">
                 {isLogin ? 'Welcome Back' : 'Create Account'}
               </h3>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2">
+              <div className="mb-2 sm:mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-red-300 text-sm">{error}</p>
+                <p className="text-red-300 text-xs">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex gap-2">
+              <div className="mb-2 sm:mb-3 p-2 bg-green-500/10 border border-green-500/20 rounded-lg flex gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                <p className="text-green-300 text-sm">{success}</p>
+                <p className="text-green-300 text-xs">{success}</p>
               </div>
             )}
 
             {isLogin ? (
               /* Login Form */
-              <form onSubmit={handleLoginSubmit} className="space-y-3">
+              <form onSubmit={handleLoginSubmit} className="space-y-2">
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-300 mb-0.5">
                     Email or Username
                   </label>
                   <div className="relative">
@@ -418,7 +419,7 @@ export default function Home() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com or username"
-                      className="w-full pl-9 pr-4 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
+                      className="w-full pl-9 pr-4 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
                       disabled={loading}
                       required
                     />
@@ -427,7 +428,7 @@ export default function Home() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-300 mb-0.5">
                     Password
                   </label>
                   <div className="relative">
@@ -437,7 +438,7 @@ export default function Home() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
+                      className="w-full pl-9 pr-9 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-white/10 transition"
                       disabled={loading}
                       required
                     />
@@ -455,73 +456,73 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-4 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full mt-2.5 px-4 py-1.5 text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                      Signing in...
+                      <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                      <span className="text-xs">Signing in...</span>
                     </>
                   ) : (
                     <>
                       Sign In
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
                 </button>
 
                 {/* Demo Credentials Carousel */}
-                <div className="mt-4">
+                <div className="mt-2.5">
                   <div className="relative">
                     {/* Carousel Container */}
                     <div className="relative overflow-hidden rounded-lg">
                       <div 
                         key={currentDemoIndex}
-                        className={`p-3 sm:p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg cursor-pointer transform transition-all duration-300 hover:bg-white/10 hover:border-purple-400/40 active:scale-[0.98]
+                        className={`p-2.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg cursor-pointer transform transition-all duration-300 hover:bg-white/10 hover:border-purple-400/40 active:scale-[0.98]
                         ${slideDirection === 'right' ? 'animate-slideInRight' : 'animate-slideInLeft'}`}
                         onClick={handleUseDemoAccount}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm sm:text-base font-bold bg-gradient-to-r ${demoAccounts[currentDemoIndex].color} bg-clip-text text-transparent`}>
+                        <div className="flex items-center justify-between mb-1.5 gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs font-bold bg-gradient-to-r ${demoAccounts[currentDemoIndex].color} bg-clip-text text-transparent truncate`}>
                               {demoAccounts[currentDemoIndex].role}
                             </span>
                           </div>
-                          <div className="text-[10px] sm:text-xs text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">
+                          <div className="text-[8px] text-gray-500 bg-white/5 px-1 py-0.5 rounded flex-shrink-0">
                             {currentDemoIndex + 1}/{demoAccounts.length}
                           </div>
                         </div>
                         
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-300">
-                            <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
-                            <span className="font-mono truncate">{demoAccounts[currentDemoIndex].email}</span>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1 text-xs text-gray-300">
+                            <Mail className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                            <span className="font-mono text-[10px] truncate">{demoAccounts[currentDemoIndex].email}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-300">
-                            <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
-                            <span className="font-mono">{demoAccounts[currentDemoIndex].password}</span>
+                          <div className="flex items-center gap-1 text-xs text-gray-300">
+                            <Lock className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                            <span className="font-mono text-[10px]">{demoAccounts[currentDemoIndex].password}</span>
                           </div>
                         </div>
                         
-                        <div className="mt-2 text-[10px] sm:text-xs text-center text-purple-300/60">
+                        <div className="mt-1 text-[8px] text-center text-purple-300/60">
                           Tap to auto-fill ✨
                         </div>
                       </div>
                     </div>
 
                     {/* Navigation Controls */}
-                    <div className="flex items-center justify-center gap-2 mt-3">
+                    <div className="flex items-center justify-center gap-1.5 mt-2">
                       <button
                         type="button"
                         onClick={() => handleDemoNavigation('prev')}
-                        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
+                        className="p-0.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
                         aria-label="Previous account"
                       >
-                        <ChevronLeft className="w-4 h-4 text-purple-300" />
+                        <ChevronLeft className="w-3 h-3 text-purple-300" />
                       </button>
                       
                       {/* Dots Indicator */}
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-0.5">
                         {demoAccounts.map((_, index) => (
                           <button
                             key={index}
@@ -530,10 +531,10 @@ export default function Home() {
                               setSlideDirection(index > currentDemoIndex ? 'right' : 'left');
                               setCurrentDemoIndex(index);
                             }}
-                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                            className={`rounded-full transition-all duration-300 ${
                               index === currentDemoIndex 
-                                ? 'w-6 bg-gradient-to-r ' + demoAccounts[index].color
-                                : 'w-1.5 bg-white/20 hover:bg-white/30'
+                                ? 'h-0.5 w-4 bg-gradient-to-r ' + demoAccounts[index].color
+                                : 'h-0.5 w-1 bg-white/20 hover:bg-white/30'
                             }`}
                             aria-label={`Go to ${demoAccounts[index].role} account`}
                           />
@@ -543,10 +544,10 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => handleDemoNavigation('next')}
-                        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
+                        className="p-0.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all duration-200 active:scale-95"
                         aria-label="Next account"
                       >
-                        <ChevronRight className="w-4 h-4 text-purple-300" />
+                        <ChevronRight className="w-3 h-3 text-purple-300" />
                       </button>
                     </div>
                   </div>
@@ -554,22 +555,22 @@ export default function Home() {
               </form>
             ) : (
               /* Registration Form */
-              <form onSubmit={handleRegisterSubmit} className="space-y-3">
+              <form onSubmit={handleRegisterSubmit} className="space-y-2">
                 {/* Name Fields */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-200 mb-1">
+                    <label className="block text-xs font-medium text-gray-200 mb-0.5">
                       First Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <User className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                       <input
                         type="text"
                         name="first_name"
                         value={formData.first_name}
                         onChange={handleChange}
                         placeholder="John"
-                        className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                         disabled={loading}
                         required
                       />
@@ -577,18 +578,18 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-200 mb-1">
+                    <label className="block text-xs font-medium text-gray-200 mb-0.5">
                       Last Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <User className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                       <input
                         type="text"
                         name="last_name"
                         value={formData.last_name}
                         onChange={handleChange}
                         placeholder="Doe"
-                        className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                         disabled={loading}
                         required
                       />
@@ -598,18 +599,18 @@ export default function Home() {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-200 mb-1">
+                  <label className="block text-xs font-medium text-gray-200 mb-0.5">
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
@@ -618,18 +619,18 @@ export default function Home() {
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-200 mb-1">
+                  <label className="block text-xs font-medium text-gray-200 mb-0.5">
                     Username
                   </label>
                   <div className="relative">
-                    <AtSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <AtSign className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                     <input
                       type="text"
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
                       placeholder="johndoe"
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition lowercase"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition lowercase"
                       disabled={loading}
                       required
                       minLength={3}
@@ -642,54 +643,54 @@ export default function Home() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-200 mb-1">
+                  <label className="block text-xs font-medium text-gray-200 mb-0.5">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-8 pr-8 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-300"
+                      className="absolute right-2.5 top-1.5 text-gray-400 hover:text-gray-300"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-200 mb-1">
+                  <label className="block text-xs font-medium text-gray-200 mb-0.5">
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="password_confirm"
                       value={formData.password_confirm}
                       onChange={handleChange}
                       placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                      className="w-full pl-9 pr-9 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-8 pr-8 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                       disabled={loading}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-300"
+                      className="absolute right-2.5 top-1.5 text-gray-400 hover:text-gray-300"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
@@ -698,7 +699,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2 px-4 text-sm text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-4"
+                  className="w-full py-1.5 px-4 text-xs text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 mt-2"
                   style={{
                     backgroundColor: loading ? '#9662f7' : '#9662f7',
                   }}
