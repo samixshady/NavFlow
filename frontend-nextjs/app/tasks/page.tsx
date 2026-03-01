@@ -150,7 +150,6 @@ export default function TasksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editingSection, setEditingSection] = useState<TaskSection | null>(null);
   
@@ -244,6 +243,13 @@ export default function TasksPage() {
       fetchProjects();
     }
   }, [router]);
+
+  // Default to single project if user has only one
+  useEffect(() => {
+    if (projects.length === 1 && filterProject === 'all') {
+      setFilterProject(projects[0].id.toString());
+    }
+  }, [projects, filterProject]);
 
   // Handle URL parameter for opening task from notification
   useEffect(() => {
@@ -1038,21 +1044,35 @@ export default function TasksPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col min-h-0 flex-1">
-      {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 md:gap-4 flex-shrink-0">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-1">
-              My Tasks
-            </h1>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-              {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} 
-              {hasActiveFilters && ' (filtered)'}
-            </p>
+      {/* Header - Clean and Simple */}
+      <div className="mb-6 flex items-center justify-between gap-4 flex-shrink-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+            My Tasks
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} • {projects.find(p => p.id.toString() === filterProject)?.name || 'All Projects'}
+          </p>
+        </div>
+
+        {/* Header Controls - Wide Search Bar and New Button */}
+        <div className="flex items-center gap-4 flex-shrink-0 w-full lg:w-auto">
+          {/* Search Bar - Wide and Prominent */}
+          <div className="relative flex-1 lg:flex-none lg:w-96 hidden md:flex items-center">
+            <Search className="absolute left-4 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by title, description, or tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm"
+            />
           </div>
+
+          {/* New Task Button */}
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 bg-[#bb69faa1] hover:bg-[#bb69fa] text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl flex-shrink-0"
+            className="cursor-pointer inline-flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl flex-shrink-0"
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">New Task</span>
@@ -1060,55 +1080,107 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Search and Filters Bar */}
-      <div className="mb-4 space-y-3 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm md:text-base"
-            />
-          </div>
+      {/* Mobile Search - Shown on small screens */}
+      <div className="mb-4 md:hidden">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm"
+          />
+        </div>
+      </div>
 
-          <div className="flex items-center gap-2">
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all flex-1 sm:flex-initial ${
-              isFilterOpen || hasActiveFilters
-                ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-purple-300'
-            }`}
+      {/* Compact Filters Bar - Always Visible but Minimized */}
+      <div className="mb-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-shrink-0 flex-wrap">
+        {/* Organization & Project Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filterOrganization}
+            onChange={(e) => {
+              setFilterOrganization(e.target.value);
+              setFilterProject('all');
+              setActiveSection(null);
+              setShowAllTasks(true);
+            }}
+            className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
           >
-            <Filter className="w-4 h-4" />
-            <span className="text-sm md:text-base">Filters</span>
-            {hasActiveFilters && (
-              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-            )}
-          </button>
+            <option value="all">All Orgs</option>
+            {uniqueOrganizations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterProject}
+            onChange={(e) => {
+              setFilterProject(e.target.value);
+              setActiveSection(null);
+              setShowAllTasks(true);
+            }}
+            className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+          >
+            <option value="all">All Projects</option>
+            {projects
+              .filter(p => filterOrganization === 'all' || p.organization_id?.toString() === filterOrganization)
+              .map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Priority, Due Date & Sort Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+          >
+            <option value="all">All Priorities</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="high">🟠 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+
+          {/* Due Date Filter - Now in Filter Bar */}
+          <select
+            value={filterDueDate}
+            onChange={(e) => setFilterDueDate(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+            title="Filter by due date"
+          >
+            <option value="all">📅 All Dates</option>
+            <option value="overdue">⚠️ Overdue</option>
+            <option value="today">📌 Today</option>
+            <option value="tomorrow">📆 Tomorrow</option>
+            <option value="this_week">🗓️ This Week</option>
+            <option value="no_date">📭 No Date</option>
+          </select>
 
           {/* Sort */}
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <select
               value={sortField}
               onChange={(e) => setSortField(e.target.value as SortField)}
-              className="px-3 py-2.5 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none text-xs md:text-sm flex-1"
+              className="px-3 py-2 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none text-sm flex-1"
             >
               <option value="created_at">Date</option>
               <option value="due_date">Due</option>
               <option value="priority">Priority</option>
               <option value="title">Title</option>
               <option value="time_spent">Time</option>
-              <option value="organization">Org</option>
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-l border-gray-200 dark:border-gray-700"
             >
               {sortOrder === 'asc' ? (
                 <SortAsc className="w-4 h-4 text-gray-500" />
@@ -1117,257 +1189,89 @@ export default function TasksPage() {
               )}
             </button>
           </div>
-          </div>
 
           {/* Clear Filters */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="cursor-pointer inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors sm:hidden"
+              className="cursor-pointer px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1 whitespace-nowrap"
             >
               <X className="w-4 h-4" />
               Clear
             </button>
           )}
         </div>
-        </div>
-
-        {/* Expanded Filters */}
-        {isFilterOpen && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 p-3 md:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl animate-in slide-in-from-top-2 duration-200">
-            <select
-              value={filterOrganization}
-              onChange={(e) => {
-                setFilterOrganization(e.target.value);
-                setFilterProject('all');
-                setActiveSection(null);
-                setShowAllTasks(true);
-              }}
-              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
-            >
-              <option value="all">All Organizations</option>
-              {uniqueOrganizations.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filterProject}
-              onChange={(e) => {
-                setFilterProject(e.target.value);
-                setActiveSection(null);
-                setShowAllTasks(true);
-              }}
-              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
-            >
-              <option value="all">All Projects</option>
-              {projects
-                .filter(p => filterOrganization === 'all' || p.organization_id?.toString() === filterOrganization)
-                .map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
-            >
-              <option value="all">All Priorities</option>
-              <option value="urgent">🔴 Urgent</option>
-              <option value="high">🟠 High</option>
-              <option value="medium">🟡 Medium</option>
-              <option value="low">🟢 Low</option>
-            </select>
-
-            <select
-              value={filterDueDate}
-              onChange={(e) => setFilterDueDate(e.target.value)}
-              className="px-3 md:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
-            >
-              <option value="all">Any Due Date</option>
-              <option value="overdue">⚠️ Overdue</option>
-              <option value="today">📅 Due Today</option>
-              <option value="tomorrow">📆 Due Tomorrow</option>
-              <option value="this_week">🗓️ This Week</option>
-              <option value="no_date">📭 No Due Date</option>
-            </select>
-          </div>
-        )}
       </div>
 
-      {/* Section Tabs - Browser-like */}
+      {/* Section Tabs - Minimal and Compact */}
       {(filterProject !== 'all' && sections.length > 0) ? (
-        <div className="mb-6 relative">
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-t-2xl p-1.5 relative">
-            {/* Left Scroll Button */}
-            {showLeftScroll && (
-              <button
-                onClick={() => scrollTabs('left')}
-                className="absolute left-0 z-10 p-2 bg-gradient-to-r from-gray-100 dark:from-gray-800 to-transparent"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-500" />
-              </button>
-            )}
-            
-            {/* Tabs Container */}
-            <div 
-              ref={tabsRef}
-              onScroll={checkScroll}
-              className="flex items-center gap-1 overflow-x-auto scrollbar-hide scroll-smooth px-1 flex-1"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        <div className="mb-4 relative">
+          <div className="flex items-center overflow-x-auto gap-2 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {/* All Tasks Tab */}
+            <button
+              onClick={() => {
+                setActiveSection(null);
+                setShowAllTasks(true);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                showAllTasks 
+                  ? 'bg-purple-600 text-white shadow-md' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
             >
-              {/* All Tasks Tab */}
+              All ({filteredTasks.length})
+            </button>
+
+            {/* Section Tabs */}
+            {sections.map((section) => {
+              const isActive = !showAllTasks && activeSection === section.id;
+              const taskCount = getTasksForSection(section.id).length;
+              
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(section.id);
+                    setShowAllTasks(false);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 inline-flex items-center gap-1.5 ${
+                    isActive 
+                      ? 'text-white shadow-md' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                  style={{
+                    backgroundColor: isActive ? section.color : undefined,
+                  }}
+                  title={`${section.name} (${taskCount} tasks)`}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: isActive ? 'white' : section.color }} />
+                  <span>{section.name}</span>
+                  <span className="text-xs opacity-80">({taskCount})</span>
+                </button>
+              );
+            })}
+            
+            {/* Add Section Button */}
+            {canManageSections() && (
               <button
                 onClick={() => {
-                  setActiveSection(null);
-                  setShowAllTasks(true);
+                  setSectionProjectId(filterProject);
+                  setIsSectionModalOpen(true);
                 }}
-                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap min-w-fit ${
-                  showAllTasks 
-                    ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' 
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                }`}
+                className="ml-auto px-3 py-1.5 text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full whitespace-nowrap font-medium transition-all flex-shrink-0"
               >
-                <Hash className="w-4 h-4" />
-                <span>All Tasks</span>
-                <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                  showAllTasks 
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' 
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                }`}>
-                  {filteredTasks.length}
-                </span>
-              </button>
-
-              {/* Section Tabs */}
-              {sections.map((section) => {
-                const isActive = !showAllTasks && activeSection === section.id;
-                const taskCount = getTasksForSection(section.id).length;
-                const isDragOver = dragOverSectionId === section.id;
-                
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setActiveSection(section.id);
-                      setShowAllTasks(false);
-                    }}
-                    onDragOver={(e) => handleTabDragOver(e, section.id)}
-                    onDragLeave={handleTabDragLeave}
-                    onDrop={(e) => handleTabDrop(e, section.id)}
-                    className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap min-w-fit ${
-                      isActive 
-                        ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' 
-                        : isDragOver
-                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 ring-2 ring-purple-400'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                    }`}
-                    style={{
-                      borderBottom: isActive ? `3px solid ${section.color}` : '3px solid transparent',
-                    }}
-                  >
-                    {/* Section Icon or Color Indicator */}
-                    {section.icon ? (
-                      <span style={{ color: section.color }}>
-                        {getSectionIcon(section.icon)}
-                      </span>
-                    ) : (
-                      <span 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: section.color }}
-                      />
-                    )}
-                    
-                    {/* Section Name */}
-                    <span>{section.name}</span>
-                    
-                    {/* Task Count */}
-                    <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                      isActive 
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' 
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {taskCount}
-                    </span>
-                    
-                    {/* Edit Button (for admins) */}
-                    {canManageSections() && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditSection(section);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
-                      >
-                        <Settings className="w-3 h-3 text-gray-400" />
-                      </button>
-                    )}
-                  </button>
-                );
-              })}
-              
-              {/* Add Section Button */}
-              {canManageSections() && (
-                <button
-                  onClick={() => {
-                    setSectionProjectId(filterProject);
-                    setIsSectionModalOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-all whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>New Section</span>
-                </button>
-              )}
-            </div>
-            
-            {/* Right Scroll Button */}
-            {showRightScroll && (
-              <button
-                onClick={() => scrollTabs('right')}
-                className="absolute right-0 z-10 p-2 bg-gradient-to-l from-gray-100 dark:from-gray-800 to-transparent"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-500" />
+                <Plus className="w-3 h-3 inline-block" /> Section
               </button>
             )}
           </div>
         </div>
-      ) : (
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Tag className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Section Tabs
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Select a project to view and manage its sections
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsSectionModalOpen(true)}
-              className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Section
-            </button>
-          </div>
-        </div>
-      )}
+      ) : null}
 
-      {/* Task List */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-      <div className="h-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col">
-        {filteredTasks.length === 0 ? (
+      {/* Main Task Container - Takes most of the space */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {/* Task List */}
+        <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+          {filteredTasks.length === 0 ? (
           <div className="text-center py-16 flex-shrink-0">
             <CheckSquare className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -1405,148 +1309,114 @@ export default function TasksPage() {
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => handleDragOver(e, task.id)}
                 onClick={() => openTaskDetail(task)}
-                className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all group ${
+                className={`flex items-center gap-4 px-5 py-3 hover:bg-purple-50/50 dark:hover:bg-gray-700/30 cursor-pointer transition-all group border-l-4 border-transparent ${
                   draggedTask?.id === task.id ? 'opacity-50' : ''
-                } ${dragOverTaskId === task.id ? 'border-t-2 border-t-purple-500' : ''}`}
+                } ${dragOverTaskId === task.id ? 'border-l-purple-500' : ''}`}
+                style={{ borderLeftColor: !showAllTasks && task.section_color ? task.section_color : 'transparent' }}
               >
-                {/* Mobile: Top Row */}
-                <div className="flex items-start gap-3 w-full sm:flex-1">
-                  {/* Drag Handle - Hidden on mobile */}
-                  <GripVertical className="hidden sm:block w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity" />
-                  
-                  {/* Priority Indicator */}
-                  <div className="flex-shrink-0">
-                    {getPriorityIcon(task.priority)}
-                  </div>
-                  
-                  {/* Task Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white line-clamp-2 sm:truncate text-sm md:text-base">
-                        {task.title}
-                      </h4>
-                      {task.section_color && (
-                        <span 
-                          className="px-2 py-0.5 text-xs font-medium rounded-full text-white flex items-center gap-1 w-fit"
-                          style={{ backgroundColor: task.section_color }}
-                          title={task.section_name || 'Section'}
-                        >
-                          {task.section_name}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium">{task.project_name}</span>
-                      {task.description && (
-                        <>
-                          <span className="hidden sm:inline">•</span>
-                          <span className="line-clamp-1 sm:truncate sm:max-w-[200px]">{task.description}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                {/* Drag Handle - Hidden on mobile */}
+                <GripVertical className="hidden sm:block w-4 h-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity" />
+                
+                {/* Priority & Checkbox */}
+                <div className="flex-shrink-0 flex items-center">
+                  {getPriorityIcon(task.priority)}
                 </div>
                 
-                {/* Mobile: Second Row - Metadata */}
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
-                  {/* Priority Badge - Mobile only */}
-                  <span className={`sm:hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                    {task.priority}
-                  </span>
-                  
-                  {/* Due Date */}
-                  {task.due_date && (
-                    <div className={`flex items-center gap-1.5 text-xs md:text-sm flex-shrink-0 ${
-                      isOverdue(task.due_date) 
-                        ? 'text-red-600 dark:text-red-400' 
-                        : isDueSoon(task.due_date) 
-                          ? 'text-orange-600 dark:text-orange-400' 
-                          : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      <Calendar className="w-3 h-3 md:w-4 md:h-4" />
-                      {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
+                {/* Task Title and Description */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 dark:text-white truncate text-sm">
+                    {task.title}
+                  </h4>
+                  {task.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {task.description}
+                    </p>
                   )}
-                  
-                  {/* Timer Display */}
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs md:text-sm font-mono ${
-                      task.is_timer_running 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                    }`}>
-                      <Timer className={`w-3 h-3 md:w-4 md:h-4 ${task.is_timer_running ? 'animate-pulse' : ''}`} />
-                      <span>{formatTimeDisplay(task)}</span>
-                    </div>
-                    
-                    {/* Timer Controls */}
-                    <div className="flex items-center gap-1">
-                      {task.is_timer_running ? (
-                        <>
-                          <button
-                            onClick={(e) => handlePauseTimer(task, e)}
-                            className="p-1.5 md:p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
-                            <Pause className="w-3 h-3 md:w-4 md:h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => handleStopTimer(task, e)}
-                            className="p-1.5 md:p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all">
-                            <Square className="w-3 h-3 md:w-4 md:h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={(e) => handleStartTimer(task, e)}
-                          className="p-1.5 md:p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-all">
-                          <Play className="w-3 h-3 md:w-4 md:h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
                 </div>
                 
-                {/* Section Selector - Desktop only */}
-                {sections.length > 0 && (
-                  <div className="hidden lg:block flex-shrink-0">
-                    <select
-                      value={task.section?.toString() || ''}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleMoveToSection(task, e.target.value ? parseInt(e.target.value) : null);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-purple-500 cursor-pointer"
-                    >
-                      <option value="">No Label</option>
-                      {sections.map((section) => (
-                        <option key={section.id} value={section.id}>
-                          {section.name}
-                        </option>
-                      ))}
-                    </select>
+                {/* Section Label - Hidden on very small screens */}
+                {task.section_color && (
+                  <span 
+                    className="hidden md:inline-flex px-2 py-1 text-xs font-medium rounded-full text-white flex-shrink-0"
+                    style={{ backgroundColor: task.section_color }}
+                    title={task.section_name || 'Section'}
+                  >
+                    {task.section_name}
+                  </span>
+                )}
+                
+                {/* Due Date */}
+                {task.due_date && (
+                  <div className={`hidden lg:flex items-center gap-1.5 text-xs flex-shrink-0 ${
+                    isOverdue(task.due_date) 
+                      ? 'text-red-600 dark:text-red-400 font-semibold' 
+                      : isDueSoon(task.due_date) 
+                        ? 'text-orange-600 dark:text-orange-400 font-semibold' 
+                        : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
                 )}
                 
-                {/* Priority Badge - Desktop only */}
-                <span className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                  {task.priority}
+                {/* Priority Badge - Hidden on desktop */}
+                <span className={`lg:hidden inline-flex items-center px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${getPriorityColor(task.priority)}`}>
+                  {task.priority.charAt(0).toUpperCase()}
                 </span>
                 
-                {/* Assignee */}
+                {/* Time Tracked */}
+                <div className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono flex-shrink-0 ${
+                  task.is_timer_running 
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                }`}>
+                  <Timer className={`w-3 h-3 ${task.is_timer_running ? 'animate-pulse' : ''}`} />
+                  <span>{formatTimeDisplay(task)}</span>
+                </div>
+                
+                {/* Timer Controls */}
+                <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+                  {task.is_timer_running ? (
+                    <>
+                      <button
+                        onClick={(e) => handlePauseTimer(task, e)}
+                        className="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
+                        title="Pause timer"
+                      >
+                        <Pause className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => handleStopTimer(task, e)}
+                        className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
+                        title="Stop timer"
+                      >
+                        <Square className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={(e) => handleStartTimer(task, e)}
+                      className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-900/50 transition-all"
+                      title="Start timer"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Assignee Avatar - Hidden on small screens */}
                 {task.assigned_to_email && (
-                  <div className="hidden xl:flex items-center gap-2 flex-shrink-0" title={task.assigned_to_email}>
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">
-                        {task.assigned_to_email.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                  <div className="hidden xl:flex w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex-shrink-0 flex items-center justify-center" title={task.assigned_to_email}>
+                    <span className="text-white text-xs font-semibold">
+                      {task.assigned_to_email.charAt(0).toUpperCase()}
+                    </span>
                   </div>
                 )}
               </div>
             ))}
           </div>
         )}
-      </div>
+        </div>
       </div>
 
       {/* Create Task Modal */}
@@ -2655,6 +2525,7 @@ export default function TasksPage() {
           </button>
         </div>
       )}
+      </div>
     </DashboardLayout>
   );
 }
