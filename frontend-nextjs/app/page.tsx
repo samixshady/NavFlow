@@ -61,7 +61,7 @@ export default function Home() {
   useEffect(() => {
     const wakeUpBackend = async () => {
       try {
-        const response = await fetch('https://navflow-api.onrender.com/api/health/', {
+        const response = await fetch('https://navflow-api.onrender.com/health/', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

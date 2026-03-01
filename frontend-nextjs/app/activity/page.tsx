@@ -234,10 +234,10 @@ export default function ActivityPage() {
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(a => 
-        a.object_name.toLowerCase().includes(search) ||
-        a.performed_by_name.toLowerCase().includes(search) ||
-        a.performed_by_username.toLowerCase().includes(search) ||
-        a.action_display.toLowerCase().includes(search)
+        (a.object_name?.toLowerCase() || '').includes(search) ||
+        (a.performed_by_name?.toLowerCase() || '').includes(search) ||
+        (a.performed_by_username?.toLowerCase() || '').includes(search) ||
+        (a.action_display?.toLowerCase() || '').includes(search)
       );
     }
     
