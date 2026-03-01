@@ -350,31 +350,52 @@ class FocusedTaskSerializer(serializers.ModelSerializer):
 
 class AuditLogSerializer(serializers.ModelSerializer):
     """Phase 5: Serializer for audit logs with user filtering support."""
-    user_email = serializers.CharField(source='user.email', read_only=True, allow_null=True)
-    user_username = serializers.CharField(source='user.username', read_only=True, allow_null=True)
-    user_name = serializers.SerializerMethodField()
-    user_avatar = serializers.SerializerMethodField()
-    action_display = serializers.CharField(source='get_action_display', read_only=True)
+    performed_by = serializers.IntegerField(source='user.id', read_only=True, allow_null=True)
+    performed_by_email = serializers.CharField(source='user.email', read_only=True, allow_null=True)
+    performed_by_username = serializers.CharField(source='user.username', read_only=True, allow_null=True)
+    performed_by_name = serializers.SerializerMethodField()
+    performed_by_initials = serializers.SerializerMethodField()
+    action_display = serializers.CharField(source='get_action_display', read_only=True, allow_null=True)
+    model_type = serializers.CharField(source='content_type', read_only=True, allow_null=True)
+    model_type_display = serializers.SerializerMethodField()
+    project_name = serializers.CharField(source='project.name', read_only=True, allow_null=True)
+    organization_name = serializers.CharField(source='organization.name', read_only=True, allow_null=True)
+    created_at = serializers.DateTimeField(source='timestamp', read_only=True)
     time_ago = serializers.SerializerMethodField()
     
     class Meta:
         model = AuditLog
         fields = [
-            'id', 'user', 'user_email', 'user_username', 'user_name', 'user_avatar',
-            'action', 'action_display', 'content_type', 'object_id', 'object_name',
-            'changes', 'timestamp', 'time_ago'
+            'id', 'action', 'action_display', 'model_type', 'model_type_display',
+            'object_id', 'object_name', 'changes',
+            'performed_by', 'performed_by_email', 'performed_by_username', 'performed_by_name', 'performed_by_initials',
+            'project', 'project_name', 'organization', 'organization_name',
+            'created_at', 'time_ago'
         ]
         read_only_fields = fields
     
-    def get_user_name(self, obj):
+    def get_performed_by_name(self, obj):
         if obj.user:
             return obj.user.get_full_name()
         return "System"
     
-    def get_user_avatar(self, obj):
+    def get_performed_by_initials(self, obj):
         if obj.user:
-            return obj.user.avatar
-        return None
+            first = obj.user.first_name[:1].upper() if obj.user.first_name else ''
+            last = obj.user.last_name[:1].upper() if obj.user.last_name else ''
+            return f"{first}{last}" or obj.user.username[:2].upper()
+        return "SYS"
+    
+    def get_model_type_display(self, obj):
+        """Get human-readable model type."""
+        model_map = {
+            'project': 'Project',
+            'task': 'Task',
+            'projectrole': 'Project Role',
+            'organization': 'Organization',
+            'comment': 'Comment',
+        }
+        return model_map.get(obj.content_type or '', obj.content_type or 'Unknown')
     
     def get_time_ago(self, obj):
         from django.utils import timezone
