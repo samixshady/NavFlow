@@ -205,10 +205,11 @@ class AccountDeleteView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Phase 7: ViewSet for managing notifications.
     Phase 8: Added accept/decline for actionable notifications.
+    Notifications are created internally - POST is not allowed via API.
     """
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
