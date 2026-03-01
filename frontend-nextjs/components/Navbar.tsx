@@ -458,16 +458,17 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   return (
     <>
       <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 transition-colors duration-300">
-      <div className="h-full px-6 lg:px-16 xl:px-24 max-w-[1600px] mx-auto flex items-center justify-between gap-6">
-        {/* Left Section */}
-        <div className="flex items-center space-x-3 flex-1 max-w-2xl">
-          {/* Mobile Menu Button */}
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Menu className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          </button>
+      <div className="h-full px-1 sm:px-3 md:px-6 lg:px-16 xl:px-24 max-w-[1600px] mx-auto flex items-center justify-between gap-1 sm:gap-2 md:gap-6">
+        {/* Mobile Menu Button - Left */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+        >
+          <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </button>
+
+        {/* Left Section - Desktop Only */}
+        <div className="hidden lg:flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
 
           {/* Search Bar - Desktop */}
           <div className="hidden md:flex items-center flex-1" ref={searchRef}>
@@ -639,11 +640,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        <div className="md:hidden flex-1 max-w-xs" ref={searchRef}>
+        {/* Mobile Search Bar - Between hamburger and right icons */}
+        <div className="md:hidden flex-1 min-w-0" ref={searchRef}>
           <div className="relative w-full">
-            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-              <Search className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-colors" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-colors" />
             </div>
             <input
               ref={searchInputRef}
@@ -652,11 +653,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={() => searchTerm && setIsSearchOpen(true)}
-              className="w-full h-8 pl-8 pr-8 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
+              className="w-full h-10 pl-10 pr-10 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:bg-gray-50/50 dark:focus:bg-gray-800/50 transition-all duration-200 ease-in-out"
             />
             {isSearching && (
-              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                <Loader2 className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 animate-spin" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="w-5 h-5 text-purple-500 dark:text-purple-400 animate-spin" />
               </div>
             )}
             {!isSearching && searchTerm && (
@@ -666,45 +667,45 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   setIsSearchOpen(false);
                   searchInputRef.current?.focus();
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 aria-label="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-5 h-5" />
               </button>
             )}
 
             {/* Mobile Search Results Dropdown */}
             {isSearchOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 sm:max-h-96 overflow-y-auto z-50">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
                 {isSearching ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
                     <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Searching...</span>
                   </div>
                 ) : !hasSearchResults ? (
-                  <div className="py-6 text-center text-gray-500 dark:text-gray-400">
+                  <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                     <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs sm:text-sm">No results for "{searchTerm}"</p>
+                    <p className="text-xs px-2">No results for "{searchTerm}"</p>
                   </div>
                 ) : (
-                  <div className="py-1">
+                  <div className="py-2">
                     {/* Projects Section */}
                     {searchResults.projects.length > 0 && (
                       <div>
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
                           Projects
                         </div>
                         {searchResults.projects.map((result) => (
                           <button
                             key={`project-${result.id}`}
                             onClick={() => handleSearchResultClick(result)}
-                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                           >
                             <div className="p-1.5 rounded bg-purple-100 dark:bg-purple-900/30 flex-shrink-0">
-                              <FolderKanban className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                              <FolderKanban className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {result.name}
                               </p>
                               {result.organization_name && (
@@ -730,20 +731,20 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     {/* Tasks Section */}
                     {searchResults.tasks.length > 0 && (
                       <div>
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
                           Tasks
                         </div>
                         {searchResults.tasks.map((result) => (
                           <button
                             key={`task-${result.id}`}
                             onClick={() => handleSearchResultClick(result)}
-                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                           >
                             <div className="p-1.5 rounded bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                              <CheckSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {result.name}
                               </p>
                               {result.description && (
@@ -769,20 +770,20 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     {/* Organizations Section */}
                     {searchResults.organizations.length > 0 && (
                       <div>
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700/50">
                           Organizations
                         </div>
                         {searchResults.organizations.map((result) => (
                           <button
                             key={`org-${result.id}`}
                             onClick={() => handleSearchResultClick(result)}
-                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left text-sm"
+                            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                           >
                             <div className="p-1.5 rounded bg-green-100 dark:bg-green-900/30 flex-shrink-0">
-                              <Building2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                              <Building2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {result.name}
                               </p>
                               {result.description && (
@@ -803,9 +804,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-0.5 sm:space-x-1.5 md:space-x-2 flex-shrink-0">
           {/* Mobile Icons */}
-          <div className="flex md:hidden items-center space-x-1">
+          <div className="flex md:hidden items-center space-x-0.5 sm:space-x-1.5">
             {/* Mobile Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -813,9 +814,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
-                <FaSun className="w-4 h-4 text-yellow-500" />
+                <FaSun className="w-5 h-5 text-yellow-500" />
               ) : (
-                <FaMoon className="w-4 h-4 text-gray-600" />
+                <FaMoon className="w-5 h-5 text-gray-600" />
               )}
             </button>
 
@@ -829,9 +830,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Notifications"
               >
-                <FaBell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <FaBell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-white text-[9px] font-bold leading-none flex items-center justify-center">
+                  <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-white text-[8px] font-bold leading-none flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -839,7 +840,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
               {/* Mobile Notifications Dropdown */}
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
                   {/* Header */}
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800">
                     <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
@@ -955,7 +956,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Profile"
               >
-                <FaUser className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <FaUser className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
 
               {/* Mobile Profile Dropdown */}
@@ -1015,7 +1016,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   {/* Actions */}
                   <div className="p-2">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setIsEditProfileOpen(true);
                         setIsProfileOpen(false);
                       }}
@@ -1026,7 +1028,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                       <ChevronRight className="w-4 h-4 ml-auto" />
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         router.push('/settings');
                         setIsProfileOpen(false);
                       }}
@@ -1041,7 +1044,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   {/* Logout */}
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                     <button
-                      onClick={handleLogout}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLogout();
+                      }}
                       className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
@@ -1277,7 +1283,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   {/* Actions */}
                   <div className="p-2">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setIsEditProfileOpen(true);
                         setIsProfileOpen(false);
                       }}
@@ -1288,7 +1295,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                       <ChevronRight className="w-4 h-4 ml-auto" />
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         router.push('/settings');
                         setIsProfileOpen(false);
                       }}
@@ -1303,7 +1311,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   {/* Logout */}
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                     <button
-                      onClick={handleLogout}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLogout();
+                      }}
                       className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
