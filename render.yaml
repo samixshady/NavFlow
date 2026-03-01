@@ -1,11 +1,4 @@
 # Render deployment configuration for NavFlow backend
-databases:
-  - name: navflow-db
-    databaseName: navflow_db
-    user: navflow_user
-    plan: free
-    region: oregon
-
 services:
   - type: web
     name: navflow-backend
@@ -14,3 +7,6 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt && python manage.py migrate
     startCommand: gunicorn navflow.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        sync: false
