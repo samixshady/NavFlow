@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,.onrender.com').split(',')]
 
 
 # Application definition
@@ -62,6 +62,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # Multi-tenant SaaS support (optional - enable when needed)
+    # 'core.tenant.MultiTenantMiddleware',
+    
+    # Security enhancements (optional - enable when needed)
+    # 'core.security.SecurityMiddleware',
+    
+    # Performance monitoring (development only)
+    # 'core.performance.DatabaseOptimizationMiddleware',
 ]
 
 ROOT_URLCONF = 'navflow.urls'
@@ -212,3 +221,63 @@ SIMPLE_JWT = {
     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
     'TOKEN_VALIDATE_LIFETIME': True,
 }
+# Cache Configuration for Performance Optimization
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'navflow',
+        'TIMEOUT': 300,  # 5 minutes default
+    }
+}
+
+# Fallback to in-memory cache if Redis not available
+if DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'navflow-cache',
+        }
+    }
+
+# Rate Limiting Configuration
+REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = [
+    'rest_framework.throttling.UserRateThrottle',
+    'rest_framework.throttling.AnonRateThrottle',
+]
+
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'user': '1000/hour',  # Per-user rate limit
+    'anon': '100/hour',   # Per-IP limit for anonymous users
+}
+
+# Celery Configuration for Async Tasks (Optional - requires Redis)
+try:
+    CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'UTC'
+    CELERY_TASK_TRACK_STARTED = True
+    CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+    CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+except Exception:
+    # If Celery config fails, proceed without it
+    pass
+
+# Email Configuration for Async Emails
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@navflow.app')
+
+# OpenAI Configuration for AI Features (Optional)
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+OPENAI_MODEL = config('OPENAI_MODEL', default='gpt-3.5-turbo')
