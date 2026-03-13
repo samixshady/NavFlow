@@ -1,0 +1,7 @@
+{
+  "dockerfile": {
+    "configType": "custom",
+    "dockerFilePath": "/Dockerfile.frontend",
+    "dockerWorkDir": "/"
+  }
+}

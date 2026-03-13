@@ -1,0 +1,12 @@
+{
+  "ports": [
+    {
+      "id": "qlohym",
+      "name": "p01",
+      "internalPort": 3000,
+      "protocol": "HTTP",
+      "public": true,
+      "disableNfDomain": false
+    }
+  ]
+}

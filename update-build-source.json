@@ -1,0 +1,14 @@
+{
+  "source": "git",
+  "vcsData": {
+    "projectType": "github",
+    "projectUrl": "https://github.com/samixshady/NavFlow",
+    "projectBranch": "main",
+    "publicRepo": false
+  },
+  "dockerfile": {
+    "configType": "custom",
+    "dockerFilePath": "/Dockerfile.frontend",
+    "dockerWorkDir": "/"
+  }
+}
