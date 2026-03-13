@@ -29,7 +29,8 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='site--navflow--kpqqy5zfhj7x.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')]
+# Include Northflank domains by default
+ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='*.northflank.app,.code.run,site--navflow--kpqqy5zfhj7x.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')]
 
 
 # Application definition
@@ -184,10 +185,22 @@ REST_FRAMEWORK = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:8001,http://127.0.0.1:8001,http://localhost:3000,http://127.0.0.1:3000'
+    default='https://*.northflank.app,http://localhost:8001,http://127.0.0.1:8001,http://localhost:3000,http://127.0.0.1:3000'
 ).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow CORS for all matching origins
+CORS_ALLOW_ALL_ORIGINS = False
+
+# CSRF Configuration - Trust CORS origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.northflank.app',
+    'http://localhost:3000',
+    'http://localhost:8001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8001',
+]
 
 # Security settings for production
 if not DEBUG:
