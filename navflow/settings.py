@@ -29,8 +29,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Include Northflank domains by default
-ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='*.northflank.app,.code.run,site--navflow--kpqqy5zfhj7x.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')]
+# Include wildcard patterns for Northflank domains and others
+# Format: *.northflank.app matches p01--navflow-backend--6k8s5s6pktgq.northflank.app
+# Format: .code.run matches all subdomains of .code.run services
+base_hosts = config('ALLOWED_HOSTS', default='*.northflank.app,.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')
+ALLOWED_HOSTS = [h.strip() for h in base_hosts if h.strip()]
 
 
 # Application definition
