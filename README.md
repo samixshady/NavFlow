@@ -16,7 +16,7 @@ If you want to evaluate my backend skills, this project is built to make them ea
 ## Tech Stack
 Backend
 - Django 6 + Django REST Framework
-- PostgreSQL (Render-ready config)
+- PostgreSQL (NorthFlank-ready config)
 - JWT auth (SimpleJWT)
 - drf-spectacular (OpenAPI / Swagger)
 - django-filter (filtering + search)
@@ -30,8 +30,8 @@ Frontend
 - Axios (API client)
 
 Deployment
-- Frontend: Vercel
-- Backend: Django (Render deployment config included)
+- Frontend: NorthFlank
+- Backend: Django (NorthFlank deployment config included)
 
 ## Multi-Tenant Architecture (Core Design)
 NavFlow is a multi-tenant system where each tenant is an Organization. Every data access path is scoped to the organization and the users membership:
@@ -156,11 +156,10 @@ npm run dev
 ```
 
 ## Deployment
-Frontend (Vercel)
-- Config in vercel.json
+Frontend (NorthFlank)
 
 Backend (Django)
-- Render config in render.yaml
+- NorthFlank config in NorthFlank.yaml
 - Build command runs migrations
 - Uses gunicorn for production
 
@@ -176,13 +175,13 @@ High-level architecture and data flow:
                                       v
                          +-------------------------+
                          |   Next.js Frontend      |
-                         |   (Vercel / Local)      |
+                         |   (NorthFlank / Local)      |
                          +-----------+-------------+
                                      | REST (JWT)
                                      v
                          +-------------------------+
                          |   Django + DRF API      |
-                         |   (Render / Local)      |
+                         |   (NorthFlank / Local)      |
                          +-----------+-------------+
                                      |
                       +--------------+--------------+
@@ -190,7 +189,7 @@ High-level architecture and data flow:
                       v                             v
          +-------------------------+     +-------------------------+
          | PostgreSQL Database     |     |  Static + Media Assets  |
-         | (Render / Local)        |     |  (Whitenoise / CDN)      |
+         | (NorthFlank / Local)        |     |  (Whitenoise / CDN)      |
          +-------------------------+     +-------------------------+
 ```
 
