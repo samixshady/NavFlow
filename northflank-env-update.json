@@ -1,0 +1,10 @@
+{
+  "environmentVariables": [
+    {"key": "DEBUG", "value": "False"},
+    {"key": "SECRET_KEY", "value": "po@&s%gbz#o_0j!pm1t1l6dw(w7*4=kqbrq5u5)62o@-@%fn^g"},
+    {"key": "ALLOWED_HOSTS", "value": "*.northflank.app,localhost,127.0.0.1"},
+    {"key": "CORS_ALLOWED_ORIGINS", "value": "https://navflow-frontend.northflank.app,http://localhost:3000"},
+    {"key": "DATABASE_URL", "value": "postgresql://_a23b6d1163fd717a:_6154c97db49011f717a55f3d25c17f@primary.navflowdb--6k8s5s6pktgq.addon.code.run:5432/_8c6fedc9f7f2?sslmode=require"},
+    {"key": "DJANGO_SETTINGS_MODULE", "value": "navflow.settings"}
+  ]
+}

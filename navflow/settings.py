@@ -224,24 +224,30 @@ SIMPLE_JWT = {
 # Cache Configuration for Performance Optimization
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'navflow',
-        'TIMEOUT': 300,  # 5 minutes default
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'navflow-cache',
     }
 }
 
-# Fallback to in-memory cache if Redis not available
-if DEBUG:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'navflow-cache',
-        }
-    }
+# Use Redis cache if available
+if not DEBUG:
+    try:
+        import redis
+        redis_url = config('REDIS_URL', default=None)
+        if redis_url:
+            CACHES = {
+                'default': {
+                    'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                    'LOCATION': redis_url,
+                    'OPTIONS': {
+                        'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    },
+                    'KEY_PREFIX': 'navflow',
+                    'TIMEOUT': 300,
+                }
+            }
+    except (ImportError, Exception):
+        pass  # Use default locmem cache
 
 # Rate Limiting Configuration
 REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = [
@@ -255,8 +261,9 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
 }
 
 # Celery Configuration for Async Tasks (Optional - requires Redis)
-try:
-    CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+# Only enable if CELERY_BROKER_URL is explicitly set
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=None)
+if CELERY_BROKER_URL:
     CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
@@ -265,9 +272,6 @@ try:
     CELERY_TASK_TRACK_STARTED = True
     CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
     CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-except Exception:
-    # If Celery config fails, proceed without it
-    pass
 
 # Email Configuration for Async Emails
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
