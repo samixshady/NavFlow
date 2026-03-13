@@ -30,8 +30,8 @@ RUN npm ci --only=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
-# Create non-root user
-RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
+# Create non-root user (use addgroup/adduser without specific UID to avoid conflicts)
+RUN addgroup appuser && adduser -D -G appuser appuser
 USER appuser
 
 # Expose port
