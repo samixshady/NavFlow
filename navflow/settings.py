@@ -15,6 +15,7 @@ from datetime import timedelta
 from decouple import config
 import dj_database_url
 import os
+import re
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,11 +30,21 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Include wildcard patterns for Northflank domains and others
-# Format: *.northflank.app matches p01--navflow-backend--6k8s5s6pktgq.northflank.app
-# Format: .code.run matches all subdomains of .code.run services
-base_hosts = config('ALLOWED_HOSTS', default='*.northflank.app,.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')
-ALLOWED_HOSTS = [h.strip() for h in base_hosts if h.strip()]
+# Include wildcard patterns for Northflank domains and others.
+# Django expects subdomain wildcards in ALLOWED_HOSTS as '.example.com', not '*.example.com'.
+base_hosts = config(
+    'ALLOWED_HOSTS',
+    default='*.northflank.app,.code.run,localhost,127.0.0.1,testserver,.onrender.com'
+).split(',')
+
+ALLOWED_HOSTS = []
+for host in base_hosts:
+    host = host.strip()
+    if not host:
+        continue
+    if host.startswith('*.'):
+        host = f'.{host[2:]}'
+    ALLOWED_HOSTS.append(host)
 
 
 # Application definition
@@ -186,10 +197,26 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = config(
+# django-cors-headers does not allow wildcard values in CORS_ALLOWED_ORIGINS.
+# Convert wildcard entries (e.g. https://*.code.run) into regexes automatically.
+raw_cors_origins = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:8001,http://127.0.0.1:8001,https://*.code.run,https://*.northflank.app'
 ).split(',')
+
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGIN_REGEXES = []
+
+for origin in raw_cors_origins:
+    origin = origin.strip()
+    if not origin:
+        continue
+
+    if '*' in origin:
+        wildcard_regex = re.escape(origin).replace(r'\*', r'[^./]+')
+        CORS_ALLOWED_ORIGIN_REGEXES.append(f'^{wildcard_regex}$')
+    else:
+        CORS_ALLOWED_ORIGINS.append(origin)
 
 CORS_ALLOW_CREDENTIALS = True
 
