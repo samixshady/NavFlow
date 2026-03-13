@@ -254,18 +254,7 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
   return (
     <>
       <style>{styles}</style>
-      {status === 'loading' ? (
-        <div className="backend-status loading">
-          <div className="status-row">
-            <div className="status-spinner"></div>
-            <span>Please wait 20-40 seconds for the backend to wake.</span>
-          </div>
-          <div className="status-bar">
-            <div className="status-bar-fill"></div>
-          </div>
-          <div className="status-hint">Render's free tier sleeps between requests. You can log in when the backend is live.</div>
-        </div>
-      ) : (
+      {status === 'success' ? (
         <div className="backend-status online">
           <div className="status-check">
             <svg viewBox="0 0 24 24">
@@ -274,7 +263,7 @@ export default function BackendStatusLoader({ isLoading }: BackendStatusLoaderPr
           </div>
           <span>Backend server online</span>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
