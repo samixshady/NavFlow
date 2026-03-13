@@ -188,7 +188,7 @@ REST_FRAMEWORK = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='https://*.northflank.app,http://localhost:8001,http://127.0.0.1:8001,http://localhost:3000,http://127.0.0.1:3000.https://p01--navflow-frontend--6k8s5s6pktgq.code.run,https://*.code.run,https://*.northflank.app'
+    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:8001,http://127.0.0.1:8001,https://*.code.run,https://*.northflank.app'
 ).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
@@ -198,11 +198,12 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 # CSRF Configuration - Trust CORS origins
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.northflank.app',
     'http://localhost:3000',
-    'http://localhost:8001',
     'http://127.0.0.1:3000',
+    'http://localhost:8001',
     'http://127.0.0.1:8001',
+    'https://*.code.run',
+    'https://*.northflank.app',
 ]
 
 # Security settings for production
