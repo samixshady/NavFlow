@@ -510,7 +510,7 @@ export default function ActivityPage() {
                               </span>
                               {' '}
                               <span className="text-gray-600 dark:text-gray-400">
-                                {(activity.action_display || '').toLowerCase()} {(activity.model_type_display || '').toLowerCase()}
+                                {activity.action_display.toLowerCase()} {activity.model_type_display.toLowerCase()}
                               </span>
                               {' '}
                               <span className="font-medium text-purple-600 dark:text-purple-400">
