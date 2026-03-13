@@ -1,0 +1,8 @@
+{
+  "projectBranch": "main",
+  "projectUrl": "https://github.com/samixshady/NavFlow",
+  "projectType": "github",
+  "publicRepo": false,
+  "dockerFilePath": "/Dockerfile.frontend",
+  "dockerWorkDir": "/"
+}
