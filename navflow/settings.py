@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,.onrender.com').split(',')]
+ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='site--navflow--kpqqy5zfhj7x.code.run,localhost,127.0.0.1,testserver,.onrender.com').split(',')]
 
 
 # Application definition
