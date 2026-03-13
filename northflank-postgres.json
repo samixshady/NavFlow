@@ -1,0 +1,8 @@
+{
+  "type": "postgres",
+  "billing": {
+    "plan": "free"
+  },
+  "name": "postgres",
+  "description": "PostgreSQL database for NavFlow backend"
+}

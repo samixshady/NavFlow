@@ -1,0 +1,40 @@
+{
+  "type": "service",
+  "name": "navflow-backend",
+  "description": "Django REST API backend for NavFlow",
+  "buildSettings": {
+    "dockerfile": {
+      "buildFrom": "source",
+      "dockerfilePath": "Dockerfile"
+    }
+  },
+  "runtime": {
+    "image": "python:3.11"
+  },
+  "deployment": {
+    "instances": 1,
+    "port": 8000,
+    "healthCheck": {
+      "type": "http",
+      "path": "/api/health/"
+    }
+  },
+  "environmentVariables": [
+    {
+      "key": "DEBUG",
+      "value": "False"
+    },
+    {
+      "key": "SECRET_KEY",
+      "value": "po@&s%gbz#o_0j!pm1t1l6dw(w7*4=kqbrq5u5)62o@-@%fn^g"
+    },
+    {
+      "key": "ALLOWED_HOSTS",
+      "value": "*"
+    },
+    {
+      "key": "CORS_ALLOWED_ORIGINS",
+      "value": "http://localhost:3000,https://*"
+    }
+  ]
+}
